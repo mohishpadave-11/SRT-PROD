@@ -7,7 +7,7 @@ const JobMapping = ({ jobsByCountry = {} }) => {
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full">
       <WorldJobMap onCountryClick={handleCountryClick} jobsByCountry={jobsByCountry} />
     </div>
   )

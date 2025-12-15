@@ -157,19 +157,20 @@ const WorldJobMap = ({ onCountryClick, jobsByCountry = {} }) => {
     <div className="relative w-full h-full overflow-hidden" onMouseMove={handleMouseMove}>
       <div className="w-full h-full flex items-center justify-center">
         <ComposableMap
-          projection="geoEqualEarth"
+          projection="geoNaturalEarth1"
           projectionConfig={{
-            scale: 100,
-            center: [0, 0]
+            scale: 160,
+            center: [20, 0]
           }}
-          width={600}
-          height={300}
+          width={800}
+          height={400}
           style={{
             width: '100%',
-            height: 'auto',
-            maxWidth: '100%',
-            maxHeight: '100%'
+            height: '100%',
+            maxWidth: 'none',
+            maxHeight: 'none'
           }}
+          preserveAspectRatio="none"
         >
         <Geographies geography={geoUrl}>
           {({ geographies }) =>
