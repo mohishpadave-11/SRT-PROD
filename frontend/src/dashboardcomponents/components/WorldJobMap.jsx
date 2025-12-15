@@ -79,16 +79,22 @@ const WorldJobMap = ({ onCountryClick, jobsByCountry = {} }) => {
 
   useEffect(() => {
     // Test if we can load the geography data
-    fetch(geoUrl)
-      .then(res => res.json())
-      .then(() => {
+    const loadMapData = async () => {
+      try {
+        const response = await fetch(geoUrl)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        await response.json()
         setIsLoading(false)
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('Error loading map data:', err)
         setError(err.message)
         setIsLoading(false)
-      })
+      }
+    }
+
+    loadMapData()
   }, [])
 
   const handleCountryClick = (geo) => {
@@ -123,8 +129,18 @@ const WorldJobMap = ({ onCountryClick, jobsByCountry = {} }) => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-red-500">Error loading map: {error}</p>
+      <div className="flex flex-col items-center justify-center h-full p-4">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Jobs by Country</p>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {Object.entries(highlightedCountries).map(([code, country]) => (
+              <div key={code} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <span className="text-gray-700">{country.name}</span>
+                <span className="font-semibold text-blue-600">{country.jobs}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }

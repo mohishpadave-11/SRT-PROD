@@ -2,13 +2,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import PropTypes from 'prop-types'
 
 const Top5Parties = ({ data: propData }) => {
-  const data = propData || [
-    { name: 'ABC Logistics', jobs: 145 },
-    { name: 'XYZ Shipping', jobs: 128 },
-    { name: 'Global Trade Co', jobs: 112 },
-    { name: 'Ocean Freight Ltd', jobs: 98 },
-    { name: 'Express Cargo', jobs: 87 }
+  const defaultData = [
+    { name: 'DataCircles Tech', jobs: 45 },
+    { name: 'Cottson Clothing', jobs: 38 },
+    { name: 'Global Shipping Co', jobs: 32 },
+    { name: 'Ocean Freight Ltd', jobs: 28 },
+    { name: 'Maritime Solutions', jobs: 24 }
   ]
+  
+  const data = (propData && propData.length > 0) ? propData : defaultData
 
   const colors = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
 

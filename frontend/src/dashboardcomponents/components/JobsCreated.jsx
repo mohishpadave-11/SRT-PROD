@@ -2,16 +2,18 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import PropTypes from 'prop-types'
 
 const JobsCreated = ({ data: propData, lastMonth = 100, thisMonth = 250 }) => {
-  const data = propData || [
-    { name: '', lastMonth: 85, thisMonth: 75 },
-    { name: '', lastMonth: 80, thisMonth: 70 },
-    { name: '', lastMonth: 90, thisMonth: 85 },
-    { name: '', lastMonth: 85, thisMonth: 80 },
-    { name: '', lastMonth: 95, thisMonth: 90 },
-    { name: '', lastMonth: 88, thisMonth: 85 },
-    { name: '', lastMonth: 92, thisMonth: 95 },
-    { name: '', lastMonth: 90, thisMonth: 100 },
+  const defaultData = [
+    { name: 'Week 1', lastMonth: 85, thisMonth: 75 },
+    { name: 'Week 2', lastMonth: 80, thisMonth: 70 },
+    { name: 'Week 3', lastMonth: 90, thisMonth: 85 },
+    { name: 'Week 4', lastMonth: 85, thisMonth: 80 },
+    { name: 'Week 5', lastMonth: 95, thisMonth: 90 },
+    { name: 'Week 6', lastMonth: 88, thisMonth: 85 },
+    { name: 'Week 7', lastMonth: 92, thisMonth: 95 },
+    { name: 'Week 8', lastMonth: 90, thisMonth: 100 },
   ]
+  
+  const data = (propData && propData.length > 0) ? propData : defaultData
 
   return (
     <div>

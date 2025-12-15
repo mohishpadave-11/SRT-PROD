@@ -23,9 +23,39 @@ const DashboardPage = () => {
   const [dashboardData, setDashboardData] = useState({
     totalJobs: 456,
     totalParties: 249,
-    jobsByCountry: {},
-    jobsCreatedData: { lastMonth: 100, thisMonth: 250, chartData: [] },
-    topParties: []
+    jobsByCountry: {
+      '840': 125, // United States
+      '156': 89,  // China
+      '276': 67,  // Germany
+      '826': 54,  // United Kingdom
+      '392': 43,  // Japan
+      '356': 78,  // India
+      '036': 32,  // Australia
+      '076': 28,  // Brazil
+      '484': 21,  // Mexico
+      '682': 19   // Saudi Arabia
+    },
+    jobsCreatedData: { 
+      lastMonth: 100, 
+      thisMonth: 250, 
+      chartData: [
+        { name: 'Week 1', lastMonth: 85, thisMonth: 75 },
+        { name: 'Week 2', lastMonth: 80, thisMonth: 70 },
+        { name: 'Week 3', lastMonth: 90, thisMonth: 85 },
+        { name: 'Week 4', lastMonth: 85, thisMonth: 80 },
+        { name: 'Week 5', lastMonth: 95, thisMonth: 90 },
+        { name: 'Week 6', lastMonth: 88, thisMonth: 85 },
+        { name: 'Week 7', lastMonth: 92, thisMonth: 95 },
+        { name: 'Week 8', lastMonth: 90, thisMonth: 100 }
+      ]
+    },
+    topParties: [
+      { name: 'DataCircles Tech', jobs: 45, percentage: 18.2 },
+      { name: 'Cottson Clothing', jobs: 38, percentage: 15.4 },
+      { name: 'Global Shipping Co', jobs: 32, percentage: 13.0 },
+      { name: 'Ocean Freight Ltd', jobs: 28, percentage: 11.3 },
+      { name: 'Maritime Solutions', jobs: 24, percentage: 9.7 }
+    ]
   })
 
   const handleLogout = () => {
@@ -54,6 +84,24 @@ const DashboardPage = () => {
   }
 
   useEffect(() => {
+    // Load initial dashboard data on component mount
+    setIsLoading(true)
+    getDashboardData(2025, 12) // Default to current year and month
+      .then(response => {
+        if (response.success) {
+          setDashboardData(response.data)
+        }
+      })
+      .catch(error => {
+        console.error('Failed to fetch dashboard data:', error)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }, [])
+
+  useEffect(() => {
+    // Update data when year/month selection changes
     if (selectedYear && selectedMapMonth) {
       setIsLoading(true)
       getDashboardData(selectedYear, selectedMapMonth)
@@ -110,7 +158,7 @@ const DashboardPage = () => {
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm font-semibold shadow-md"
               >
                 <span className="text-lg">+</span>
-                <span>NEW JOB</span>
+                <span>New Job</span>
               </button>
 
               <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
@@ -266,7 +314,7 @@ const DashboardPage = () => {
                     </select>
                   </div>
                 </div>
-                <div className="h-64 sm:h-80 lg:h-96 overflow-hidden rounded-lg">
+                <div className="h-80 sm:h-96 lg:h-[32rem] overflow-hidden rounded-lg">
                   <JobMapping jobsByCountry={dashboardData.jobsByCountry} />
                 </div>
               </div>

@@ -39,12 +39,17 @@ const NewJobPage = () => {
     finalDestination: "",
     invoiceNo: "",
     invoiceDate: "",
+    shipmentType: "LCL",
     mode: "Air",
     service: "Import",
     containerNo: "",
     sobDate: "",
     deliveredDate: "",
     blNo: "",
+    shippingBillNo: "",
+    shippingBillNoDate: "",
+    billOfEntryNo: "",
+    billOfEntryDate: "",
     vesselType: "Vessel",
     vesselNo: "",
     flightNo: "",
@@ -297,6 +302,36 @@ const NewJobPage = () => {
                   />
                 </Field>
 
+                <Field label="Invoice No">
+                  <input 
+                    value={form.invoiceNo} 
+                    onChange={(e) => handleChange("invoiceNo", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    placeholder="Enter invoice number"
+                  />
+                </Field>
+
+                <Field label="Invoice Date">
+                  <input 
+                    type="date" 
+                    value={form.invoiceDate} 
+                    onChange={(e) => handleChange("invoiceDate", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                </Field>
+
+                <Field label="Type of Shipment">
+                  <select 
+                    value={form.shipmentType} 
+                    onChange={(e) => handleChange("shipmentType", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="LCL">LCL (Less than Container Load)</option>
+                    <option value="FCL">FCL (Full Container Load)</option>
+                    <option value="Part of FCL">Part of FCL</option>
+                  </select>
+                </Field>
+
                 <Field label="Port of Loading">
                   <input 
                     value={form.portOfLoading} 
@@ -346,6 +381,15 @@ const NewJobPage = () => {
                   />
                 </Field>
 
+                <Field label="SOB Date">
+                  <input 
+                    type="date" 
+                    value={form.sobDate} 
+                    onChange={(e) => handleChange("sobDate", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                </Field>
+
                 <Field label="Vessel / Flight">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <select 
@@ -374,6 +418,42 @@ const NewJobPage = () => {
                   </div>
                 </Field>
 
+                <Field label="Shipping Bill No">
+                  <input 
+                    value={form.shippingBillNo} 
+                    onChange={(e) => handleChange("shippingBillNo", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    placeholder="Enter shipping bill number"
+                  />
+                </Field>
+
+                <Field label="Shipping Bill No Date">
+                  <input 
+                    type="date" 
+                    value={form.shippingBillNoDate} 
+                    onChange={(e) => handleChange("shippingBillNoDate", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                </Field>
+
+                <Field label="Bill of Entry No">
+                  <input 
+                    value={form.billOfEntryNo} 
+                    onChange={(e) => handleChange("billOfEntryNo", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    placeholder="Enter bill of entry number"
+                  />
+                </Field>
+
+                <Field label="Bill of Entry Date">
+                  <input 
+                    type="date" 
+                    value={form.billOfEntryDate} 
+                    onChange={(e) => handleChange("billOfEntryDate", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                </Field>
+
                 <Field label="ETA">
                   <input 
                     value={form.eta} 
@@ -398,6 +478,33 @@ const NewJobPage = () => {
                     value={form.blDate} 
                     onChange={(e) => handleChange("blDate", e.target.value)} 
                     className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                </Field>
+
+                <Field label="Delivered On">
+                  <input 
+                    type="date" 
+                    value={form.deliveredDate} 
+                    onChange={(e) => handleChange("deliveredDate", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                </Field>
+
+                <Field label="BL No">
+                  <input 
+                    value={form.blNo} 
+                    onChange={(e) => handleChange("blNo", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    placeholder="Enter BL number"
+                  />
+                </Field>
+
+                <Field label="Final Destination">
+                  <input 
+                    value={form.finalDestination} 
+                    onChange={(e) => handleChange("finalDestination", e.target.value)} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    placeholder="Enter final destination"
                   />
                 </Field>
               </div>

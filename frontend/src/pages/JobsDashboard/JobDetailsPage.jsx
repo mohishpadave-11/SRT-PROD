@@ -39,12 +39,17 @@ const JobDetailsPage = () => {
         finalDestination: "New York",
         invoiceNo: "INV-2025-001",
         invoiceDate: "20-11-2025",
+        shipmentType: "LCL",
         mode: "Air", // Air | Sea
         service: "Import", // Import | Export
         containerNo: "11",
         sobDate: "22-11-25",
         deliveredDate: "25-11-25",
         blNo: "1234",
+        shippingBillNo: "SB-2025-001",
+        shippingBillNoDate: "21-11-2025",
+        billOfEntryNo: "BOE-2025-001",
+        billOfEntryDate: "22-11-2025",
         vesselType: "Vessel", // Vessel | Flight
         vesselNo: "",
         flightNo: "",
@@ -75,12 +80,17 @@ const JobDetailsPage = () => {
         finalDestination: "California",
         invoiceNo: "INV-2025-002",
         invoiceDate: "20-11-2025",
+        shipmentType: "FCL",
         mode: "Sea",
         service: "Export",
         containerNo: "45",
         sobDate: "25-11-25",
         deliveredDate: "27-11-25",
         blNo: "5678",
+        shippingBillNo: "SB-2025-002",
+        shippingBillNoDate: "24-11-2025",
+        billOfEntryNo: "BOE-2025-002",
+        billOfEntryDate: "25-11-2025",
         vesselType: "Vessel",
         vesselNo: "VES-123",
         flightNo: "",
@@ -106,12 +116,17 @@ const JobDetailsPage = () => {
         finalDestination: "Singapore",
         invoiceNo: "INV-2025-003",
         invoiceDate: "21-11-2025",
+        shipmentType: "Part of FCL",
         mode: "Sea",
         service: "Export",
         containerNo: "9",
         sobDate: "18-11-25",
         deliveredDate: "20-11-25",
         blNo: "9999",
+        shippingBillNo: "SB-2025-003",
+        shippingBillNoDate: "19-11-2025",
+        billOfEntryNo: "BOE-2025-003",
+        billOfEntryDate: "20-11-2025",
         vesselType: "Flight",
         vesselNo: "",
         flightNo: "FL-777",
@@ -141,12 +156,17 @@ const JobDetailsPage = () => {
         finalDestination: "Various",
         invoiceNo: `INV-2025-${String(i).padStart(3, "0")}`,
         invoiceDate: "22-11-2025",
+        shipmentType: "LCL",
         mode: "Sea",
         service: "Export",
         containerNo: "—",
         sobDate: "—",
         deliveredDate: "—",
         blNo: "—",
+        shippingBillNo: "—",
+        shippingBillNoDate: "—",
+        billOfEntryNo: "—",
+        billOfEntryDate: "—",
         vesselType: "Vessel",
         vesselNo: "-",
         flightNo: "-",
@@ -460,6 +480,8 @@ const JobDetailsPage = () => {
                   <div className="space-y-4 sm:space-y-6">
                     <FieldDisplay label="Exporter Name" value={jobState.exporterName} isEdit={isEdit} onChange={(v) => handleChange("exporterName", v)} />
                     <FieldDisplay label="Exporter Address" value={jobState.exporterAddress} isEdit={isEdit} onChange={(v) => handleChange("exporterAddress", v)} />
+                    <FieldDisplay label="Invoice No" value={jobState.invoiceNo} isEdit={isEdit} onChange={(v) => handleChange("invoiceNo", v)} />
+                    <DateFieldDisplay label="Invoice Date" value={jobState.invoiceDate} isEdit={isEdit} onChange={(v) => handleChange("invoiceDate", v)} />
                     <FieldDisplay label="Port Of Loading" value={jobState.portOfLoading} isEdit={isEdit} onChange={(v) => handleChange("portOfLoading", v)} />
 
                     {/* Type of Mode dropdown */}
@@ -479,14 +501,33 @@ const JobDetailsPage = () => {
 
                     <FieldDisplay label="Container No" value={jobState.containerNo} isEdit={isEdit} onChange={(v) => handleChange("containerNo", v)} />
                     <DateFieldDisplay label="SOB Date" value={jobState.sobDate} isEdit={isEdit} onChange={(v) => handleChange("sobDate", v)} />
-                    <DateFieldDisplay label="Delivered on Date" value={jobState.deliveredDate} isEdit={isEdit} onChange={(v) => handleChange("deliveredDate", v)} />
+                    <FieldDisplay label="Shipping Bill No" value={jobState.shippingBillNo} isEdit={isEdit} onChange={(v) => handleChange("shippingBillNo", v)} />
+                    <DateFieldDisplay label="Shipping Bill No Date" value={jobState.shippingBillNoDate} isEdit={isEdit} onChange={(v) => handleChange("shippingBillNoDate", v)} />
                     <FieldDisplay label="BL No" value={jobState.blNo} isEdit={isEdit} onChange={(v) => handleChange("blNo", v)} />
+                    <FieldDisplay label="Final Destination" value={jobState.finalDestination} isEdit={isEdit} onChange={(v) => handleChange("finalDestination", v)} />
                   </div>
 
                   {/* RIGHT COLUMN */}
                   <div className="space-y-4 sm:space-y-6">
                     <FieldDisplay label="Consignee Name" value={jobState.consigneeName} isEdit={isEdit} onChange={(v) => handleChange("consigneeName", v)} />
                     <FieldDisplay label="Consignee Address" value={jobState.consigneeAddress} isEdit={isEdit} onChange={(v) => handleChange("consigneeAddress", v)} />
+                    
+                    {/* Type of Shipment dropdown */}
+                    <div className="space-y-2">
+                      <dt className="font-medium text-slate-700 text-sm">Type of Shipment</dt>
+                      <dd>
+                        {!isEdit ? (
+                          <div className="w-full p-3 border rounded-lg bg-gray-50 text-slate-900 min-h-[44px] flex items-center">{jobState.shipmentType}</div>
+                        ) : (
+                          <select value={jobState.shipmentType} onChange={(e) => handleChange("shipmentType", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="LCL">LCL (Less than Container Load)</option>
+                            <option value="FCL">FCL (Full Container Load)</option>
+                            <option value="Part of FCL">Part of FCL</option>
+                          </select>
+                        )}
+                      </dd>
+                    </div>
+
                     <FieldDisplay label="Port Of Discharge" value={jobState.portOfDischarge} isEdit={isEdit} onChange={(v) => handleChange("portOfDischarge", v)} />
 
                     {/* Service dropdown (Import / Export) */}
@@ -531,9 +572,12 @@ const JobDetailsPage = () => {
                       </dd>
                     </div>
 
+                    <FieldDisplay label="Bill of Entry No" value={jobState.billOfEntryNo} isEdit={isEdit} onChange={(v) => handleChange("billOfEntryNo", v)} />
+                    <DateFieldDisplay label="Bill of Entry Date" value={jobState.billOfEntryDate} isEdit={isEdit} onChange={(v) => handleChange("billOfEntryDate", v)} />
                     <FieldDisplay label="ETA" value={jobState.eta} isEdit={isEdit} onChange={(v) => handleChange("eta", v)} />
                     <FieldDisplay label="Volume" value={jobState.volume} isEdit={isEdit} onChange={(v) => handleChange("volume", v)} />
                     <DateFieldDisplay label="BL Date" value={jobState.blDate} isEdit={isEdit} onChange={(v) => handleChange("blDate", v)} />
+                    <DateFieldDisplay label="Delivered on Date" value={jobState.deliveredDate} isEdit={isEdit} onChange={(v) => handleChange("deliveredDate", v)} />
                   </div>
                 </div>
               </div>
