@@ -176,7 +176,7 @@ const JobsDashboard = () => {
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm font-semibold shadow-md"
               >
                 <span className="text-lg">+</span>
-                <span>NEW JOB</span>
+                <span>New Job</span>
               </button>
 
               <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
