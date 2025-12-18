@@ -104,3 +104,119 @@ export const getDashboardData = async (year, month) => {
     }
   }
 }
+
+// Generate mock document data
+const generateMockDocuments = () => {
+  const documents = []
+  
+  // Generate customer folders (100 items to test pagination)
+  for (let i = 1; i <= 100; i++) {
+    documents.push({
+      id: i,
+      customerName: `customer #${i}`,
+      jobNo: `JOB${String(i).padStart(3, '0')}`,
+      date: '09/28/2021, 10:44 am',
+      type: 'folder',
+      createdAt: new Date(2021, 8, 28, 10, 44).toISOString(),
+      updatedAt: new Date(2021, 8, 28, 10, 44).toISOString()
+    })
+  }
+  
+  return documents
+}
+
+export const getDocuments = async (filters = {}) => {
+  try {
+    // For deployment, always use mock data since we don't have a backend deployed
+    if (import.meta.env.PROD) {
+      throw new Error('Using mock data for production')
+    }
+    
+    // Try to fetch from backend first (only in development)
+    const queryParams = new URLSearchParams(filters).toString()
+    const response = await fetch(`${API_BASE_URL}/documents?${queryParams}`)
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch documents')
+    }
+    
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.log('Using mock document data')
+    
+    let documents = generateMockDocuments()
+    
+    // Apply filters to mock data
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase()
+      documents = documents.filter(doc => 
+        doc.customerName.toLowerCase().includes(searchTerm) ||
+        doc.jobNo.toLowerCase().includes(searchTerm)
+      )
+    }
+    
+    if (filters.type) {
+      documents = documents.filter(doc => doc.type === filters.type)
+    }
+    
+    if (filters.dateFrom) {
+      const fromDate = new Date(filters.dateFrom)
+      documents = documents.filter(doc => new Date(doc.createdAt) >= fromDate)
+    }
+    
+    if (filters.dateTo) {
+      const toDate = new Date(filters.dateTo)
+      documents = documents.filter(doc => new Date(doc.createdAt) <= toDate)
+    }
+    
+    // Sort by date (newest first)
+    if (filters.sortBy === 'newest') {
+      documents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    } else if (filters.sortBy === 'oldest') {
+      documents.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    }
+    
+    return {
+      success: true,
+      data: documents,
+      total: documents.length
+    }
+  }
+}
+
+export const getDocumentById = async (id) => {
+  try {
+    // For deployment, always use mock data since we don't have a backend deployed
+    if (import.meta.env.PROD) {
+      throw new Error('Using mock data for production')
+    }
+    
+    // Try to fetch from backend first (only in development)
+    const response = await fetch(`${API_BASE_URL}/documents/${id}`)
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch document')
+    }
+    
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.log(`Using mock data for document ${id}`)
+    
+    const documents = generateMockDocuments()
+    const document = documents.find(doc => doc.id === parseInt(id))
+    
+    if (!document) {
+      return {
+        success: false,
+        error: 'Document not found'
+      }
+    }
+    
+    return {
+      success: true,
+      data: document
+    }
+  }
+}

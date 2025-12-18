@@ -1,23 +1,21 @@
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { useMemo, useState } from "react";
-import { Eye, Upload, Trash2, Home, FileText, LogOut, Search, User } from "lucide-react";
-import logo from '../../assets/srtship-logo.png';
+import { useMemo, useState, useEffect } from "react";
+import { Ship, Plane, FileText, Users, MapPin, Calendar, Package, Anchor } from 'lucide-react';
 
-const DEFAULT_DOC_TITLES = ["Invoice", "PackingList", "BL", "Insurance", "COO"];
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import DocumentExplorer from '../../components/dashboard/DocumentExplorer';
+import PdfViewerModal from '../../components/documentdashboardcomponents/PdfViewerModal';
+import CompanyDropdown from '../../components/form/CompanyDropdown';
+import useFolderSystem from '../../hooks/useFolderSystem';
+import { MOCK_EXPORTERS, MOCK_IMPORTERS, addExporter, addImporter } from '../../data/mockCompanies';
+
+
 
 const JobDetailsPage = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    navigate('/login')
-  }
-
-  const goToDashboard = () => {
-    navigate('/dashboard')
-  }
 
   // -------------------------
   // Mock data (IDENTICAL to JobsDashboard)
@@ -59,11 +57,16 @@ const JobDetailsPage = () => {
         volume: "100",
         blDate: "25-11-25",
         documents: [
-          { id: 1, name: "Invoice.pdf" },
-          { id: 2, name: "PackingList.pdf" },
-          { id: 3, name: "BL.pdf" },
-          { id: 4, name: "Insurance.pdf" },
-          { id: 5, name: "COO.pdf" }
+          { id: 1, name: "Invoice.pdf", type: 'document', size: '102KB', dateModified: '22-11-2025' },
+          { id: 2, name: "PackingList.pdf", type: 'document', size: '210KB', dateModified: '22-11-2025' },
+          { id: 3, name: "BL.pdf", type: 'document', size: '194KB', dateModified: '22-11-2025' },
+          { id: 4, name: "Insurance.pdf", type: 'document', size: '340KB', dateModified: '22-11-2025' },
+          { id: 5, name: "COO.pdf", type: 'document', size: '394KB', dateModified: '22-11-2025' },
+          { id: 6, name: "ShippingBill.pdf", type: 'document', size: '385KB', dateModified: '22-11-2025' },
+          { id: 7, name: "BillOfEntry.pdf", type: 'document', size: '364KB', dateModified: '22-11-2025' },
+          { id: 8, name: "CustomsDeclaration.pdf", type: 'document', size: '282KB', dateModified: '22-11-2025' },
+          { id: 9, name: "DeliveryOrder.pdf", type: 'document', size: '271KB', dateModified: '22-11-2025' },
+          { id: 10, name: "CargoManifest.pdf", type: 'document', size: '597KB', dateModified: '22-11-2025' }
         ]
       },
       {
@@ -98,8 +101,8 @@ const JobDetailsPage = () => {
         volume: "200",
         blDate: "22-11-25",
         documents: [
-          { id: 1, name: "Invoice.pdf" },
-          { id: 2, name: "PackingList.pdf" }
+          { id: 1, name: "Invoice.pdf", type: 'document', size: '102KB', dateModified: '22-11-2025' },
+          { id: 2, name: "PackingList.pdf", type: 'document', size: '210KB', dateModified: '22-11-2025' }
         ]
       },
       {
@@ -134,9 +137,9 @@ const JobDetailsPage = () => {
         volume: "150",
         blDate: "18-11-25",
         documents: [
-          { id: 1, name: "Invoice.pdf" },
-          { id: 2, name: "BL.pdf" },
-          { id: 3, name: "Insurance.pdf" }
+          { id: 1, name: "Invoice.pdf", type: 'document', size: '102KB', dateModified: '18-11-2025' },
+          { id: 2, name: "BL.pdf", type: 'document', size: '194KB', dateModified: '18-11-2025' },
+          { id: 3, name: "Insurance.pdf", type: 'document', size: '340KB', dateModified: '18-11-2025' }
         ]
       }
     ];
@@ -184,48 +187,41 @@ const JobDetailsPage = () => {
 
   if (!originalJob) {
     return (
-      <div className="h-screen bg-gray-50 w-full flex flex-col overflow-hidden">
+      <DashboardLayout>
         <div className="p-8">
           <h1 className="text-xl font-semibold text-red-600">Job Not Found</h1>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
-  // Normalize documents: ensure 5 constant document rows per job.
-  const normalizeDocs = (rawDocs) => {
-    const result = DEFAULT_DOC_TITLES.map((title, idx) => {
-      const existing = rawDocs?.find((d) => {
-        if (!d || !d.name) return false;
-        return d.name.toLowerCase().includes(title.toLowerCase());
-      });
-      return {
-        id: idx + 1,
-        title,
-        fileName: existing ? existing.name : null
-      };
-    });
 
-    const unmatched = (rawDocs || []).filter(d => {
-      return !result.some(r => r.fileName && r.fileName === d.name);
-    });
-
-    let j = 0;
-    for (let i = 0; i < result.length && j < unmatched.length; i++) {
-      if (!result[i].fileName) {
-        result[i].fileName = unmatched[j].name;
-        j++;
-      }
-    }
-
-    return result;
-  };
 
   // Local editable state (start with original job's values)
   const [jobState, setJobState] = useState({ ...originalJob });
-  const [docs, setDocs] = useState(() => normalizeDocs(originalJob.documents || []));
   // initialize edit mode from navigation state (JobsDashboard passes { state: { edit: true } })
   const [isEdit, setIsEdit] = useState(Boolean(location?.state?.edit));
+  // Tab state
+  const [activeTab, setActiveTab] = useState('details');
+
+  // Use folder system hook for document management
+  const { currentFolder, folderDocuments, openFolder, addDocuments, removeDocument } = useFolderSystem()
+  
+  // PDF Viewer state
+  const [showPdfViewer, setShowPdfViewer] = useState(false)
+  const [currentPdf, setCurrentPdf] = useState(null)
+
+  // Simulate opening the current job as a folder when documents tab is active
+  useEffect(() => {
+    if (activeTab === 'documents' && !currentFolder) {
+      // Simulate opening the job folder
+      openFolder({
+        id: originalJob.id,
+        jobNo: originalJob.jobNo,
+        type: 'folder'
+      })
+    }
+  }, [activeTab, currentFolder, originalJob.id, originalJob.jobNo, openFolder])
 
   // Handlers for details
   const handleChange = (field, val) => {
@@ -239,170 +235,69 @@ const JobDetailsPage = () => {
 
   const handleCancel = () => {
     setJobState({ ...originalJob });
-    setDocs(normalizeDocs(originalJob.documents || []));
     setIsEdit(false);
   };
 
-  // Documents logic (updated)
-  const handleViewDoc = (doc) => {
-    if (!doc.fileName) {
-      alert("No file uploaded for this document.");
-      return;
-    }
-    alert(`Viewing file: ${doc.fileName}`);
-  };
-
-  const handleReplaceFile = (docId, file) => {
-    if (!file) return;
-    setDocs((d) => d.map(x => x.id === docId ? { ...x, fileName: file.name } : x));
-  };
-
-  // Delete only removes the file content, not the document row.
-  const handleDeleteFileOnly = (docId) => {
-    const doc = docs.find(d => d.id === docId);
-    if (!doc) return;
-    if (!doc.fileName) {
-      alert("No file to delete for this document.");
-      return;
-    }
-    if (!confirm("Remove the file from this document? This will keep the document row but delete its file.")) return;
-
-    setDocs((d) => d.map(x => x.id === docId ? { ...x, fileName: null } : x));
-  };
-
-  // Header upload: put into first empty doc or replace first
-  const handleHeaderUpload = (file) => {
-    if (!file) return;
-    const firstEmpty = docs.find(d => !d.fileName);
-    if (!firstEmpty) {
-      setDocs((d) => d.map((x, idx) => idx === 0 ? { ...x, fileName: file.name } : x));
+  // Document handlers for DocumentExplorer
+  const handleDocumentClick = (document) => {
+    // Handle document click - open PDF viewer for PDFs
+    if (document.name && document.name.toLowerCase().endsWith('.pdf')) {
+      setCurrentPdf(document)
+      setShowPdfViewer(true)
     } else {
-      setDocs((d) => d.map(x => x.id === firstEmpty.id ? { ...x, fileName: file.name } : x));
+      // For non-PDF documents, show a message or handle differently
+      alert(`Opening document: ${document.name || document.customerName}`)
     }
-  };
+  }
+
+  // Upload handler
+  const handleFileUpload = (files, documentType) => {
+    const success = addDocuments(files, documentType)
+    
+    if (!success) {
+      alert('Please select a folder to upload documents to.')
+      return
+    }
+
+    alert(`Successfully uploaded ${files.length} document(s) as ${documentType}`)
+  }
+
+  // Delete document handler
+  const handleDeleteDocument = (e, documentId, documentName) => {
+    e.stopPropagation() // Prevent triggering the document click
+    
+    if (confirm(`Are you sure you want to delete "${documentName}"?`)) {
+      removeDocument(documentId)
+      alert(`"${documentName}" has been deleted successfully.`)
+    }
+  }
+
+  // Download document handler
+  const handleDownloadDocument = (e, documentName) => {
+    e.stopPropagation() // Prevent triggering the document click
+    
+    // Simulate download functionality
+    alert(`Downloading "${documentName}"...`)
+    // In a real application, you would trigger the actual download here
+    // For example: window.open(downloadUrl) or fetch and create blob
+  }
+
+  // Company management handlers
+  const handleAddExporter = (name, address) => {
+    const newExporter = addExporter(name, address)
+    alert(`Added new exporter: ${newExporter.name}`)
+  }
+
+  const handleAddImporter = (name, address) => {
+    const newImporter = addImporter(name, address)
+    alert(`Added new importer: ${newImporter.name}`)
+  }
+
+
 
   return (
-    <div className="h-screen bg-gray-50 w-full flex flex-col overflow-hidden">
-      {/* ---------- DESKTOP HEADER ---------- */}
-      <header className="flex-shrink-0 z-50 w-full hidden md:block">
-        <div className="bg-white shadow-lg h-20 w-full border-b-2 border-gray-100">
-          <div className="flex items-center justify-between h-full px-4 max-w-none">
-            <div
-              onClick={goToDashboard}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') goToDashboard() }}
-              className="flex items-center cursor-pointer"
-            >
-              <img src={logo} alt="SRT Shipping" className="h-8 sm:h-12" />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search Companies, Jobs, Parties"
-                  className="pl-12 pr-6 py-3 border border-gray-300 rounded-lg w-96 focus:ring-2 focus:ring-blue-500 text-base"
-                />
-              </div>
-
-              <button
-                onClick={() => navigate('/jobs/new')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm font-semibold shadow-md"
-              >
-                <span className="text-lg">+</span>
-                <span>NEW JOB</span>
-              </button>
-
-              <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
-                <button
-                  onClick={() => navigate('/admin/profile')}
-                  className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center hover:bg-gray-400"
-                >
-                  <User className="w-7 h-7 text-gray-600" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* ---------- MOBILE HEADER ---------- */}
-      <header className="md:hidden flex-shrink-0 z-50 bg-white shadow-sm h-16 w-full border-b border-gray-100">
-        <div className="flex items-center justify-between h-full px-4">
-          <div onClick={goToDashboard} className="cursor-pointer flex items-center">
-            <img src={logo} className="h-8" alt="SRT Shipping" />
-          </div>
-
-          <div className="flex-1 px-3">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search"
-                className="pl-8 pr-3 py-2 border border-gray-300 rounded-lg w-full text-sm"
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={() => navigate('/jobs/new')}
-            className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold"
-          >
-            + New
-          </button>
-        </div>
-      </header>
-
-      {/* ---------- MAIN LAYOUT CONTAINER ---------- */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* ---------- DESKTOP SIDEBAR (extends full height) ---------- */}
-        <aside className="hidden md:flex w-20 bg-white shadow-lg flex-col border-r-2 border-gray-100 flex-shrink-0 absolute left-0 top-20 bottom-0 z-30">
-          <nav className="py-6 flex-1">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className={`w-full flex flex-col items-center py-5 ${
-                location.pathname === '/dashboard'
-                  ? 'text-blue-600 bg-blue-50 border-l-4 border-blue-600'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
-              }`}
-              aria-label="Dashboard"
-            >
-              <Home className="w-7 h-7" />
-            </button>
-
-            <button
-              onClick={() => navigate('/jobs-dashboard')}
-              className={`w-full flex flex-col items-center py-5 ${
-                location.pathname === '/jobs-dashboard'
-                  ? 'text-blue-600 bg-blue-50 border-l-4 border-blue-600'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
-              }`}
-              aria-label="Jobs"
-            >
-              <FileText className="w-7 h-7" />
-            </button>
-          </nav>
-
-          {/* Logout button at bottom of sidebar */}
-          <div className="border-t border-gray-200 bg-white">
-            <button
-              onClick={handleLogout}
-              className="w-full flex flex-col items-center py-4 text-gray-600 hover:bg-gray-50 hover:text-red-600 transition-colors"
-              aria-label="Logout"
-            >
-              <LogOut className="w-6 h-6" />
-              <span className="text-xs mt-1">Logout</span>
-            </button>
-          </div>
-        </aside>
-
-        {/* ---------- MAIN CONTENT AREA ---------- */}
-        <div className="flex-1 overflow-auto bg-gray-50 md:pb-0 pb-16 md:ml-20">
-          <div className="flex flex-col min-h-screen bg-gray-100 text-slate-700">
-            <main className="flex-grow">
-          <div className="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8">
+    <DashboardLayout>
+      <div className="max-w-screen-2xl mx-auto text-slate-700">
 
             {/* TOP SECTION - More spacious on mobile */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
@@ -471,217 +366,496 @@ const JobDetailsPage = () => {
               </div>
             </div>
 
-            {/* DETAILS CARD */}
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
+            {/* TABS NAVIGATION */}
+            <div className="bg-white rounded-t-lg shadow-sm border border-slate-200 border-b-0">
+              <div className="flex border-b border-slate-200">
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'details'
+                      ? 'border-blue-600 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  Details
+                </button>
+                <button
+                  onClick={() => setActiveTab('documents')}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'documents'
+                      ? 'border-blue-600 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  Documents
+                </button>
+              </div>
+            </div>
+
+            {/* TAB CONTENT */}
+            <div className="bg-white rounded-b-lg shadow-sm border border-slate-200 border-t-0 mb-6">
               <div className="p-4 sm:p-6 md:p-8">
-                {/* Mobile: Single column, Desktop: Two columns */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 text-sm">
-                  {/* LEFT COLUMN */}
-                  <div className="space-y-4 sm:space-y-6">
-                    <FieldDisplay label="Exporter Name" value={jobState.exporterName} isEdit={isEdit} onChange={(v) => handleChange("exporterName", v)} />
-                    <FieldDisplay label="Exporter Address" value={jobState.exporterAddress} isEdit={isEdit} onChange={(v) => handleChange("exporterAddress", v)} />
-                    <FieldDisplay label="Invoice No" value={jobState.invoiceNo} isEdit={isEdit} onChange={(v) => handleChange("invoiceNo", v)} />
-                    <DateFieldDisplay label="Invoice Date" value={jobState.invoiceDate} isEdit={isEdit} onChange={(v) => handleChange("invoiceDate", v)} />
-                    <FieldDisplay label="Port Of Loading" value={jobState.portOfLoading} isEdit={isEdit} onChange={(v) => handleChange("portOfLoading", v)} />
-
-                    {/* Type of Mode dropdown */}
-                    <div className="space-y-2">
-                      <dt className="font-medium text-slate-700 text-sm">Type of Mode</dt>
-                      <dd>
-                        {!isEdit ? (
-                          <div className="w-full p-3 border rounded-lg bg-gray-50 text-slate-900 min-h-[44px] flex items-center">{jobState.mode}</div>
-                        ) : (
-                          <select value={jobState.mode} onChange={(e) => handleChange("mode", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="Air">Air</option>
-                            <option value="Sea">Sea</option>
-                          </select>
-                        )}
-                      </dd>
-                    </div>
-
-                    <FieldDisplay label="Container No" value={jobState.containerNo} isEdit={isEdit} onChange={(v) => handleChange("containerNo", v)} />
-                    <DateFieldDisplay label="SOB Date" value={jobState.sobDate} isEdit={isEdit} onChange={(v) => handleChange("sobDate", v)} />
-                    <FieldDisplay label="Shipping Bill No" value={jobState.shippingBillNo} isEdit={isEdit} onChange={(v) => handleChange("shippingBillNo", v)} />
-                    <DateFieldDisplay label="Shipping Bill No Date" value={jobState.shippingBillNoDate} isEdit={isEdit} onChange={(v) => handleChange("shippingBillNoDate", v)} />
-                    <FieldDisplay label="BL No" value={jobState.blNo} isEdit={isEdit} onChange={(v) => handleChange("blNo", v)} />
-                    <FieldDisplay label="Final Destination" value={jobState.finalDestination} isEdit={isEdit} onChange={(v) => handleChange("finalDestination", v)} />
-                  </div>
-
-                  {/* RIGHT COLUMN */}
-                  <div className="space-y-4 sm:space-y-6">
-                    <FieldDisplay label="Consignee Name" value={jobState.consigneeName} isEdit={isEdit} onChange={(v) => handleChange("consigneeName", v)} />
-                    <FieldDisplay label="Consignee Address" value={jobState.consigneeAddress} isEdit={isEdit} onChange={(v) => handleChange("consigneeAddress", v)} />
-                    
-                    {/* Type of Shipment dropdown */}
-                    <div className="space-y-2">
-                      <dt className="font-medium text-slate-700 text-sm">Type of Shipment</dt>
-                      <dd>
-                        {!isEdit ? (
-                          <div className="w-full p-3 border rounded-lg bg-gray-50 text-slate-900 min-h-[44px] flex items-center">{jobState.shipmentType}</div>
-                        ) : (
-                          <select value={jobState.shipmentType} onChange={(e) => handleChange("shipmentType", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="LCL">LCL (Less than Container Load)</option>
-                            <option value="FCL">FCL (Full Container Load)</option>
-                            <option value="Part of FCL">Part of FCL</option>
-                          </select>
-                        )}
-                      </dd>
-                    </div>
-
-                    <FieldDisplay label="Port Of Discharge" value={jobState.portOfDischarge} isEdit={isEdit} onChange={(v) => handleChange("portOfDischarge", v)} />
-
-                    {/* Service dropdown (Import / Export) */}
-                    <div className="space-y-2">
-                      <dt className="font-medium text-slate-700 text-sm">Service</dt>
-                      <dd>
-                        {!isEdit ? (
-                          <div className="w-full p-3 border rounded-lg bg-gray-50 text-slate-900 min-h-[44px] flex items-center">{jobState.service}</div>
-                        ) : (
-                          <select value={jobState.service} onChange={(e) => handleChange("service", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="Import">Import</option>
-                            <option value="Export">Export</option>
-                          </select>
-                        )}
-                      </dd>
-                    </div>
-
-                    {/* Vessel / Flight */}
-                    <div className="space-y-2">
-                      <dt className="font-medium text-slate-700 text-sm">Vessel / Flight</dt>
-                      <dd>
-                        {!isEdit ? (
-                          <div className="w-full p-3 border rounded-lg bg-gray-50 text-slate-900 min-h-[44px] flex items-center">
-                            {jobState.vesselType === "Vessel"
-                              ? jobState.vesselNo || jobState.vesselNoDisplay
-                              : jobState.flightNo || jobState.flightNoDisplay}
+                {activeTab === 'details' && (
+                  <div className="space-y-6">
+                    {/* Row 1: Shipment & Route + Current Status */}
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
+                      
+                      {/* Shipment & Route Section */}
+                      <div className="xl:col-span-2">
+                        <div className="bg-white border border-gray-200 rounded-lg p-8 h-full">
+                          <div className="flex items-center gap-2 mb-6">
+                            <Ship className="w-5 h-5 text-blue-600" />
+                            <h3 className="text-lg font-semibold text-gray-900">Shipment & Route</h3>
                           </div>
-                        ) : (
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <select value={jobState.vesselType} onChange={(e) => handleChange("vesselType", e.target.value)} className="w-full sm:w-32 border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                              <option value="Vessel">Vessel</option>
-                              <option value="Flight">Flight</option>
-                            </select>
-
-                            {jobState.vesselType === "Vessel" ? (
-                              <input value={jobState.vesselNo} onChange={(e) => handleChange("vesselNo", e.target.value)} placeholder="Vessel No" className="flex-1 border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-                            ) : (
-                              <input value={jobState.flightNo} onChange={(e) => handleChange("flightNo", e.target.value)} placeholder="Flight No" className="flex-1 border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-                            )}
-                          </div>
-                        )}
-                      </dd>
-                    </div>
-
-                    <FieldDisplay label="Bill of Entry No" value={jobState.billOfEntryNo} isEdit={isEdit} onChange={(v) => handleChange("billOfEntryNo", v)} />
-                    <DateFieldDisplay label="Bill of Entry Date" value={jobState.billOfEntryDate} isEdit={isEdit} onChange={(v) => handleChange("billOfEntryDate", v)} />
-                    <FieldDisplay label="ETA" value={jobState.eta} isEdit={isEdit} onChange={(v) => handleChange("eta", v)} />
-                    <FieldDisplay label="Volume" value={jobState.volume} isEdit={isEdit} onChange={(v) => handleChange("volume", v)} />
-                    <DateFieldDisplay label="BL Date" value={jobState.blDate} isEdit={isEdit} onChange={(v) => handleChange("blDate", v)} />
-                    <DateFieldDisplay label="Delivered on Date" value={jobState.deliveredDate} isEdit={isEdit} onChange={(v) => handleChange("deliveredDate", v)} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* DOCUMENTS BOX (NEW CARD BELOW DETAILS) */}
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200">
-              <div className="p-6 md:p-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium">Documents</h3>
-                </div>
-
-                <div className="overflow-x-auto bg-white border rounded">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-600 w-24">Serial No</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">Document Name</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-600 w-56">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(docs.length ? docs : []).map((doc, idx) => (
-                        <tr key={doc.id} className="border-t">
-                          <td className="px-4 py-3 text-sm text-slate-700">{idx + 1}</td>
-                          <td className="px-4 py-3 text-sm text-slate-800">
-                            <div className="flex items-center justify-between">
-                              <div className="break-words">{doc.fileName ?? doc.title}</div>
-                              {!doc.fileName && <div className="text-sm italic text-slate-500">No file</div>}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleViewDoc(doc)}
-                                className={`px-2 py-1 rounded border hover:bg-gray-50 flex items-center gap-1 ${!doc.fileName ? "opacity-50 cursor-not-allowed" : ""}`}
-                                disabled={!doc.fileName}
-                              >
-                                <Eye className="w-4 h-4" /> View
-                              </button>
-
-                              <label className="px-2 py-1 rounded border hover:bg-gray-50 flex items-center gap-1 cursor-pointer overflow-hidden">
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleReplaceFile(doc.id, file);
-                                  }}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Port of Loading */}
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Anchor className="w-4 h-4 text-blue-500" />
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">PORT OF LOADING</span>
+                              </div>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium">{jobState.portOfLoading || "—"}</div>
+                              ) : (
+                                <input 
+                                  value={jobState.portOfLoading || ""} 
+                                  onChange={(e) => handleChange("portOfLoading", e.target.value)} 
+                                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
                                 />
-                                <Upload className="w-4 h-4" /> {doc.fileName ? "Replace" : "Upload"}
-                              </label>
-
-                              <button
-                                onClick={() => handleDeleteFileOnly(doc.id)}
-                                className="px-2 py-1 rounded border text-red-600 hover:bg-red-50 flex items-center gap-1"
-                              >
-                                <Trash2 className="w-4 h-4" /> Delete
-                              </button>
+                              )}
                             </div>
-                          </td>
-                        </tr>
-                      ))}
 
-                      {docs.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="px-4 py-6 text-center text-sm text-slate-500">No documents available.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                            {/* Port of Discharge */}
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Anchor className="w-4 h-4 text-blue-500" />
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">PORT OF DISCHARGE</span>
+                              </div>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium">{jobState.portOfDischarge || "—"}</div>
+                              ) : (
+                                <input 
+                                  value={jobState.portOfDischarge || ""} 
+                                  onChange={(e) => handleChange("portOfDischarge", e.target.value)} 
+                                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                />
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                            {/* Service */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">SERVICE</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.service || "—"}</div>
+                              ) : (
+                                <select value={jobState.service} onChange={(e) => handleChange("service", e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1">
+                                  <option value="Import">Import</option>
+                                  <option value="Export">Export</option>
+                                </select>
+                              )}
+                            </div>
+
+                            {/* Type */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">TYPE</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.shipmentType || "—"}</div>
+                              ) : (
+                                <select value={jobState.shipmentType} onChange={(e) => handleChange("shipmentType", e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1">
+                                  <option value="LCL">LCL</option>
+                                  <option value="FCL">FCL</option>
+                                  <option value="Part of FCL">Part of FCL</option>
+                                </select>
+                              )}
+                            </div>
+
+                            {/* Mode */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">MODE</span>
+                              <div className="flex items-center gap-1 mt-1">
+                                {jobState.mode === 'Sea' ? <Ship className="w-4 h-4 text-blue-600" /> : <Plane className="w-4 h-4 text-blue-600" />}
+                                {!isEdit ? (
+                                  <span className="text-gray-900 font-medium">{jobState.mode || "—"}</span>
+                                ) : (
+                                  <select value={jobState.mode} onChange={(e) => handleChange("mode", e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="Sea">Sea</option>
+                                    <option value="Air">Air</option>
+                                  </select>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Volume */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">VOLUME</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.volume ? `${jobState.volume} CBM` : "—"}</div>
+                              ) : (
+                                <input 
+                                  value={jobState.volume || ""} 
+                                  onChange={(e) => handleChange("volume", e.target.value)} 
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                  placeholder="CBM"
+                                />
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                            {/* Vessel/Flight */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">VESSEL / FLIGHT</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">
+                                  {jobState.vesselType === "Vessel" 
+                                    ? (jobState.vesselNo || jobState.vesselNoDisplay || "—")
+                                    : (jobState.flightNo || jobState.flightNoDisplay || "—")
+                                  }
+                                </div>
+                              ) : (
+                                <div className="flex gap-1 mt-1">
+                                  <select value={jobState.vesselType} onChange={(e) => handleChange("vesselType", e.target.value)} className="border border-gray-300 rounded px-1 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="Vessel">Vessel</option>
+                                    <option value="Flight">Flight</option>
+                                  </select>
+                                  {jobState.vesselType === "Vessel" ? (
+                                    <input value={jobState.vesselNo || ""} onChange={(e) => handleChange("vesselNo", e.target.value)} placeholder="Vessel No" className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                  ) : (
+                                    <input value={jobState.flightNo || ""} onChange={(e) => handleChange("flightNo", e.target.value)} placeholder="Flight No" className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Container No */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">CONTAINER NO</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.containerNo || "—"}</div>
+                              ) : (
+                                <input 
+                                  value={jobState.containerNo || ""} 
+                                  onChange={(e) => handleChange("containerNo", e.target.value)} 
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                />
+                              )}
+                            </div>
+
+                            {/* ETA */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">ETA</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.eta || "—"}</div>
+                              ) : (
+                                <input 
+                                  value={jobState.eta || ""} 
+                                  onChange={(e) => handleChange("eta", e.target.value)} 
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                />
+                              )}
+                            </div>
+
+                            {/* Delivered */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">DELIVERED</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.deliveredDate || "—"}</div>
+                              ) : (
+                                <input 
+                                  type="date"
+                                  value={jobState.deliveredDate || ""} 
+                                  onChange={(e) => handleChange("deliveredDate", e.target.value)} 
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Current Status */}
+                      <div className="xl:col-span-1">
+                        <div className="bg-white border border-gray-200 rounded-lg p-8 h-full">
+                          <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">CURRENT STATUS</h3>
+                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">ON TIME</span>
+                          </div>
+                          
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <div>
+                                <div className="font-medium text-gray-900">Customs Cleared</div>
+                                <div className="text-sm text-gray-500">{jobState.date}, 10:30 AM</div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                              <div>
+                                <div className="font-medium text-gray-500">Arrival at Port</div>
+                                <div className="text-sm text-gray-400">Est. Oct 28</div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                              <div>
+                                <div className="font-medium text-gray-500">Delivery</div>
+                                <div className="text-sm text-gray-400">Est. Oct 30</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Documentation References + Parties Involved */}
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
+                      
+                      {/* Documentation References Section */}
+                      <div className="xl:col-span-2">
+                        <div className="bg-white border border-gray-200 rounded-lg p-8 h-full">
+                          <div className="flex items-center gap-2 mb-6">
+                            <FileText className="w-5 h-5 text-blue-600" />
+                            <h3 className="text-lg font-semibold text-gray-900">Documentation References</h3>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Invoice Details */}
+                            <div className="space-y-4">
+                              <div>
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">INVOICE NO</span>
+                                {!isEdit ? (
+                                  <div className="text-gray-900 font-medium mt-1">{jobState.invoiceNo || "—"}</div>
+                                ) : (
+                                  <input 
+                                    value={jobState.invoiceNo || ""} 
+                                    onChange={(e) => handleChange("invoiceNo", e.target.value)} 
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                  />
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">BILL OF ENTRY NO</span>
+                                {!isEdit ? (
+                                  <div className="text-gray-900 font-medium mt-1">{jobState.billOfEntryNo || "—"}</div>
+                                ) : (
+                                  <input 
+                                    value={jobState.billOfEntryNo || ""} 
+                                    onChange={(e) => handleChange("billOfEntryNo", e.target.value)} 
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                  />
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">SOB DATE</span>
+                                {!isEdit ? (
+                                  <div className="text-gray-900 font-medium mt-1">{jobState.sobDate || "—"}</div>
+                                ) : (
+                                  <input 
+                                    type="date"
+                                    value={jobState.sobDate || ""} 
+                                    onChange={(e) => handleChange("sobDate", e.target.value)} 
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                  />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* BL and Shipping Details */}
+                            <div className="space-y-4">
+                              <div>
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">INVOICE DATE</span>
+                                {!isEdit ? (
+                                  <div className="text-gray-900 font-medium mt-1">{jobState.invoiceDate || "—"}</div>
+                                ) : (
+                                  <input 
+                                    type="date"
+                                    value={jobState.invoiceDate || ""} 
+                                    onChange={(e) => handleChange("invoiceDate", e.target.value)} 
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                  />
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">BL NO</span>
+                                {!isEdit ? (
+                                  <div className="text-blue-600 font-medium mt-1 cursor-pointer hover:underline">{jobState.blNo || "—"}</div>
+                                ) : (
+                                  <input 
+                                    value={jobState.blNo || ""} 
+                                    onChange={(e) => handleChange("blNo", e.target.value)} 
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                  />
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">BL DATE</span>
+                                {!isEdit ? (
+                                  <div className="text-gray-900 font-medium mt-1">{jobState.blDate || "—"}</div>
+                                ) : (
+                                  <input 
+                                    type="date"
+                                    value={jobState.blDate || ""} 
+                                    onChange={(e) => handleChange("blDate", e.target.value)} 
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">BILL OF ENTRY DATE</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.billOfEntryDate || "—"}</div>
+                              ) : (
+                                <input 
+                                  type="date"
+                                  value={jobState.billOfEntryDate || ""} 
+                                  onChange={(e) => handleChange("billOfEntryDate", e.target.value)} 
+                                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                />
+                              )}
+                            </div>
+
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">SHIPPING BILL NO</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.shippingBillNo || "—"}</div>
+                              ) : (
+                                <input 
+                                  value={jobState.shippingBillNo || ""} 
+                                  onChange={(e) => handleChange("shippingBillNo", e.target.value)} 
+                                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1" 
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Parties Involved */}
+                      <div className="xl:col-span-1">
+                        <div className="bg-white border border-gray-200 rounded-lg p-8 h-full">
+                          <div className="flex items-center gap-2 mb-6">
+                            <Users className="w-5 h-5 text-blue-600" />
+                            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Parties Involved</h3>
+                          </div>
+                          
+                          <div className="space-y-6">
+                            {/* Exporter */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">EXPORTER NAME</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.exporterName || "—"}</div>
+                              ) : (
+                                <CompanyDropdown 
+                                  label="" 
+                                  value={jobState.exporterName} 
+                                  isEdit={isEdit} 
+                                  onChange={(v) => handleChange("exporterName", v)}
+                                  companies={MOCK_EXPORTERS}
+                                  placeholder="Select exporter..."
+                                  onAddNew={handleAddExporter}
+                                />
+                              )}
+                              
+                              <div className="mt-2">
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">EXPORTER ADDRESS</span>
+                                {!isEdit ? (
+                                  <div className="text-gray-600 text-sm mt-1">{jobState.exporterAddress || "—"}</div>
+                                ) : (
+                                  <textarea 
+                                    value={jobState.exporterAddress || ""} 
+                                    onChange={(e) => handleChange("exporterAddress", e.target.value)} 
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1 text-sm" 
+                                    rows="2"
+                                  />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Consignee */}
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">CONSIGNEE NAME</span>
+                              {!isEdit ? (
+                                <div className="text-gray-900 font-medium mt-1">{jobState.consigneeName || "—"}</div>
+                              ) : (
+                                <CompanyDropdown 
+                                  label="" 
+                                  value={jobState.consigneeName} 
+                                  isEdit={isEdit} 
+                                  onChange={(v) => handleChange("consigneeName", v)}
+                                  companies={MOCK_IMPORTERS}
+                                  placeholder="Select importer..."
+                                  onAddNew={handleAddImporter}
+                                />
+                              )}
+                              
+                              <div className="mt-2">
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">CONSIGNEE ADDRESS</span>
+                                {!isEdit ? (
+                                  <div className="text-gray-600 text-sm mt-1">{jobState.consigneeAddress || "—"}</div>
+                                ) : (
+                                  <textarea 
+                                    value={jobState.consigneeAddress || ""} 
+                                    onChange={(e) => handleChange("consigneeAddress", e.target.value)} 
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1 text-sm" 
+                                    rows="2"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'documents' && (
+                  <div className="-m-4 sm:-m-6 md:-m-8 p-4 sm:p-6 md:p-8">
+                    <DocumentExplorer
+                      documents={folderDocuments}
+                      currentFolder={currentFolder}
+                      isLoading={false}
+                      onDocumentClick={handleDocumentClick}
+                      onUpload={handleFileUpload}
+                      onDelete={handleDeleteDocument}
+                      onDownload={handleDownloadDocument}
+                      allowUpload={true}
+                      title="Job Documents"
+                      subtitle={`Manage documents for Job No ${jobState.jobNo}`}
+                      showStats={false}
+                      showBreadcrumb={false}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-          </div>
-            </main>
-          </div>
-        </div>
+
+
       </div>
 
-      {/* ---------- MOBILE BOTTOM NAV ---------- */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden flex justify-between items-center px-4 py-2 z-50">
-        <button onClick={() => navigate('/dashboard')} className="flex flex-col items-center text-gray-600">
-          <Home className="w-5 h-5" />
-          <span className="text-xs">Home</span>
-        </button>
-
-        <button onClick={() => navigate('/jobs-dashboard')} className="flex flex-col items-center text-gray-600">
-          <FileText className="w-5 h-5" />
-          <span className="text-xs">Jobs</span>
-        </button>
-
-        <button onClick={() => navigate('/admin/profile')} className="flex flex-col items-center text-gray-600">
-          <User className="w-5 h-5" />
-          <span className="text-xs">Profile</span>
-        </button>
-
-        <button onClick={handleLogout} className="flex flex-col items-center text-gray-600">
-          <LogOut className="w-5 h-5" />
-          <span className="text-xs">Logout</span>
-        </button>
-      </nav>
-    </div>
+      {/* PDF Viewer Modal */}
+      <PdfViewerModal 
+        isOpen={showPdfViewer}
+        fileName={currentPdf?.name}
+        onClose={() => setShowPdfViewer(false)}
+        onDownload={handleDownloadDocument}
+      />
+    </DashboardLayout>
   );
 };
 

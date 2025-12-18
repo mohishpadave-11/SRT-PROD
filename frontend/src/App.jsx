@@ -7,6 +7,8 @@ import JobsDashboard from './pages/JobsDashboard/JobsDashboard'
 import JobDetailsPage from "./pages/JobsDashboard/JobDetailsPage"
 import NewJobPage from './pages/NewJobPage/NewJobPage'
 import AdminProfilePage from './pages/admin/AdminProfilePage'
+import CompanyManagement from './pages/admin/CompanyManagement'
+import DocumentDashboard from './pages/DocumentDashboard/DocumentDashboard'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -56,6 +58,18 @@ function App() {
         <Route 
           path="/admin/profile" 
           element={isLoggedIn ? <AdminProfilePage /> : <Navigate to="/login" />} 
+        />
+
+        {/* COMPANY MANAGEMENT ROUTE */}
+        <Route 
+          path="/admin/companies" 
+          element={isLoggedIn ? <CompanyManagement /> : <Navigate to="/login" />} 
+        />
+
+        {/* DOCUMENT DASHBOARD ROUTE */}
+        <Route 
+          path="/document-dashboard" 
+          element={isLoggedIn ? <DocumentDashboard /> : <Navigate to="/login" />} 
         />
 
         {/* DEFAULT REDIRECT */}
