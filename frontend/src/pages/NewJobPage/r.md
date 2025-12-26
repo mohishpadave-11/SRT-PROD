@@ -1,150 +1,115 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Ship, Plane, FileText, Users, Package, Anchor, Save, AlertCircle, Loader } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast'; // ✅ Import Toast
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Ship, Plane, FileText, Users, Package, Anchor, Save, AlertCircle } from 'lucide-react';
 
-// --- API Services ---
-import { createJobAPI, updateJobAPI } from '../../services/jobService';
-
-// --- 2. Import Document Service ---
-import { 
-  uploadDocumentAPI 
-} from '../../services/documentService';
-
-// --- 3. Import Company Service ---
-import { createCompanyAPI } from '../../services/companyService';
+// --- 1. Import the Real API Service ---
+import { createJobAPI } from '../../services/jobService';
 
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import CompanyDropdown from '../../components/form/CompanyDropdown';
+// This Dropdown now fetches its own data from the API
+import CompanyDropdown from '../../components/form/CompanyDropdown'; 
 import DocumentExplorer from '../../components/dashboard/DocumentExplorer';
-// PdfViewerModal import removed
+import PdfViewerModal from '../../components/documentdashboardcomponents/PdfViewerModal';
 import FormInput from '../../components/form/FormInput';
 import FormSelect from '../../components/form/FormSelect';
 import JobFormSection from '../../components/form/JobFormSection';
-import useJobForm from '../../hooks/useJobForm';
-import useDocumentActions from '../../hooks/useDocumentActions';
 
 const NewJobPage = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // Get job ID from URL for edit mode
-  
   const [activeTab, setActiveTab] = useState('details');
   
-  // Check if we're in edit mode
-  const isEditMode = Boolean(id);
+  // --- New State for API Calls ---
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [form, setForm] = useState({
+    jobNo: "",
+    date: new Date().toISOString().split('T')[0], // Default to today
+    exporterName: "",
+    exporterAddress: "",
+    consigneeName: "",
+    consigneeAddress: "",
+    notifyParty: "",
+    portOfLoading: "",
+    portOfDischarge: "",
+    finalDestination: "",
+    invoiceNo: "",
+    invoiceDate: "",
+    shipmentType: "LCL",
+    mode: "Sea",
+    service: "Import",
+    containerNo: "",
+    sobDate: "",
+    deliveredDate: "",
+    blNo: "",
+    shippingBillNo: "",
+    shippingBillNoDate: "",
+    billOfEntryNo: "",
+    billOfEntryDate: "",
+    vesselType: "Vessel",
+    vesselNo: "",
+    flightNo: "",
+    eta: "",
+    volume: "",
+    blDate: "",
+  });
+
+  // Documents state
+  const [documents, setDocuments] = useState([]);
   
-  // Use the custom hook
-  const {
-    form,
-    setForm,
-    handleChange,
-    loading,
-    setLoading,
-    loadingDocs,
-    setLoadingDocs,
-    error,
-    setError,
-    documents,
-    setDocuments,
-    companies,
-    loadDocuments
-  } = useJobForm(id, isEditMode);
+  // PDF Viewer state
+  const [showPdfViewer, setShowPdfViewer] = useState(false)
+  const [currentPdf, setCurrentPdf] = useState(null)
 
-  // Use document actions hook
-  const { handleDelete, handleDownload, handlePreview } = useDocumentActions();
+  const handleChange = (field, value) => setForm((s) => ({ ...s, [field]: value }));
 
-  // Load documents when switching to documents tab
-  useEffect(() => {
-    if (isEditMode && activeTab === 'documents') {
-      loadDocuments();
-    }
-  }, [isEditMode, activeTab]);
+  // --- Note: Add Exporter/Importer functions removed ---
+  // The CompanyDropdown component now handles adding new companies 
+  // internally via the API.
 
-  // --- 3. Document Handlers (Staging + Upload) ---
-
-  const handleFileUpload = async (files, documentType) => {
-    const fileArray = Array.from(files);
-
-    if (isEditMode) {
-      try {
-        for (const file of fileArray) {
-          await uploadDocumentAPI(id, documentType, file);
-        }
-        toast.success(`Successfully uploaded ${fileArray.length} document(s)`);
-        loadDocuments(); 
-      } catch (err) {
-        console.error(err);
-        toast.error("Upload failed. Please check your connection.");
-      }
+  // Document handlers
+  const handleDocumentClick = (document) => {
+    if (document.name && document.name.toLowerCase().endsWith('.pdf')) {
+      setCurrentPdf(document)
+      setShowPdfViewer(true)
     } else {
-      const pendingDocs = fileArray.map((file, index) => ({
-        id: `pending-${Date.now()}-${index}`, 
-        name: `${documentType}.${file.name.split('.').pop()}`,
-        type: 'document',
-        docType: documentType,
-        size: (file.size / 1024).toFixed(1) + ' KB',
-        dateModified: 'Pending Upload',
-        isPending: true, 
-        fileObj: file 
-      }));
-
-      setDocuments(prev => [...prev, ...pendingDocs]);
-      toast.success("Documents staged. Click 'Create Job' to save.");
+      alert(`Opening document: ${document.name || document.customerName}`)
     }
   }
 
-  // Document handlers using the hook
+  const handleFileUpload = (files, documentType) => {
+    const newDocs = files.map((file, index) => ({
+      id: documents.length + index + 1,
+      name: file.name,
+      type: 'document',
+      size: `${Math.round(file.size / 1024)}KB`,
+      dateModified: new Date().toISOString().split('T')[0],
+      customerName: form.exporterName || 'New Job'
+    }))
+    
+    setDocuments(prev => [...prev, ...newDocs])
+    alert(`Successfully uploaded ${files.length} document(s)`)
+  }
+
   const handleDeleteDocument = (e, documentId, documentName) => {
-    e.stopPropagation();
-    
-    const docToDelete = documents.find(d => d.id === documentId);
-
-    if (docToDelete?.isPending) {
-      // Local delete for pending documents
-      handleDelete(documentId, documentName, () => {
-        setDocuments(prev => prev.filter(d => d.id !== documentId));
-      });
-    } else {
-      // Backend delete for saved documents
-      handleDelete(documentId, documentName, loadDocuments);
+    e.stopPropagation() 
+    if (confirm(`Are you sure you want to delete "${documentName}"?`)) {
+      setDocuments(prev => prev.filter(doc => doc.id !== documentId))
     }
-  };
+  }
 
-  const handleDownloadDocument = (e, documentName, documentId) => {
-    if (e) e.stopPropagation();
-    
-    const doc = documents.find(d => d.id === documentId || d.name === documentName);
-    const docId = documentId || doc?.id;
+  const handleDownloadDocument = (e, documentName) => {
+    e.stopPropagation() 
+    alert(`Downloading "${documentName}"...`)
+  }
 
-    if (doc?.isPending) {
-      toast.error("Save the job first to download this document.");
-      return;
-    }
-
-    if (!docId) return;
-    handleDownload(docId, documentName);
-  };
-
-  const handlePreviewDocument = (document) => {
-    if (document.isPending) {
-        toast.error("Save the job first to preview this document.");
-        return;
-    }
-    handlePreview(document.id);
-  };
-
-  const handleDocumentClick = (document) => {
-      handlePreviewDocument(document);
-  };
-
-  // --- 4. Submit Handler (Create/Update Job) ---
+  // --- SUBMIT HANDLER ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!form.jobNo) {
       setError("Job Number is required");
-      toast.error("Job Number is required");
       window.scrollTo(0, 0); 
       return;
     }
@@ -153,8 +118,8 @@ const NewJobPage = () => {
 
     try {
         const backendPayload = {
+            // New Fields
             job_number: form.jobNo,
-            status: form.status,
             job_date: form.date,
             exporter_name: form.exporterName,
             exporter_address: form.exporterAddress,
@@ -162,6 +127,8 @@ const NewJobPage = () => {
             consignee_address: form.consigneeAddress,
             notify_party: form.notifyParty,
             final_destination: form.finalDestination,
+
+            // Existing Fields
             port_of_loading: form.portOfLoading,
             port_of_discharge: form.portOfDischarge,
             service_type: form.service,
@@ -171,6 +138,8 @@ const NewJobPage = () => {
             container_no: form.containerNo,
             eta: form.eta || null,
             delivered_date: form.deliveredDate || null,
+
+            // Docs
             invoice_no: form.invoiceNo,
             invoice_date: form.invoiceDate || null,
             bill_of_entry_no: form.billOfEntryNo,
@@ -179,35 +148,22 @@ const NewJobPage = () => {
             bl_date: form.blDate || null,
             sob_date: form.sobDate || null,
             shipping_bill_no: form.shippingBillNo,
+
+            // Vessel Logic
             vessel_flight_type: form.vesselType === 'Vessel' ? 'Vessel No' : 'Flight No',
-            vessel_flight_name: form.vesselType === 'Vessel' ? form.vesselNo : form.flightNo
+            vessel_flight_name: form.vesselType === 'Vessel' ? form.vesselNo : form.flightNo,
+            
+            status: 'In Progress'
         };
 
-        if (isEditMode) {
-          await updateJobAPI(id, backendPayload);
-          navigate("/jobs-dashboard", { state: { message: "Job updated successfully!" } });
-        } else {
-          const newJob = await createJobAPI(backendPayload);
-          const newJobId = newJob.id || newJob.data?.id;
-
-          if (!newJobId) throw new Error("Job created but ID missing. Cannot upload docs.");
-
-          const pendingDocs = documents.filter(d => d.isPending);
-          
-          if (pendingDocs.length > 0) {
-            for (const doc of pendingDocs) {
-              await uploadDocumentAPI(newJobId, doc.docType, doc.fileObj);
-            }
-          }
-
-          navigate("/jobs-dashboard", { state: { message: "Job created successfully!" } });
-        }
+        await createJobAPI(backendPayload);
+        
+        alert("Job created successfully in Database!");
+        navigate("/dashboard");
 
     } catch (err) {
         console.error(err);
-        const errMsg = typeof err === 'string' ? err : `Failed to save job. ${err.message || ''}`;
-        setError(errMsg);
-        toast.error("Failed to save job. Please check errors.");
+        setError(typeof err === 'string' ? err : 'Failed to save job. Check connection.');
         window.scrollTo(0, 0);
     } finally {
         setLoading(false);
@@ -216,36 +172,21 @@ const NewJobPage = () => {
 
   return (
     <DashboardLayout>
-      {/* ✅ Add Toaster */}
-      <Toaster position="top-right" />
-
-      {loading ? (
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-center">
-            <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600">Loading job data...</p>
-          </div>
-        </div>
-      ) : (
       <div className="max-w-screen-2xl mx-auto text-slate-700">
-        
-        {/* Header */}
+        {/* TOP SECTION */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
             <div className="h-20 w-20 sm:h-16 sm:w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mx-auto sm:mx-0">
                <Package className="w-8 h-8" />
             </div>
             <div className="text-center sm:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-                {isEditMode ? 'Edit Job' : 'Create New Job'}
-              </h1>
-              <p className="text-base sm:text-sm text-slate-500">
-                {isEditMode ? `Job No: ${form.jobNo}` : 'Fill in the details to create a new shipping job'}
-              </p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Create New Job</h1>
+              <p className="text-base sm:text-sm text-slate-500">Fill in the details to create a new shipping job</p>
             </div>
           </div>
         </div>
 
+        {/* Error Display */}
         {error && (
             <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
                 <AlertCircle className="w-5 h-5" />
@@ -253,7 +194,7 @@ const NewJobPage = () => {
             </div>
         )}
 
-        {/* Tabs */}
+        {/* TABS NAVIGATION */}
         <div className="bg-white rounded-t-lg shadow-sm border border-slate-200 border-b-0">
           <div className="flex border-b border-slate-200">
             <button
@@ -268,37 +209,31 @@ const NewJobPage = () => {
             </button>
             <button
               onClick={() => setActiveTab('documents')}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'documents'
                   ? 'border-blue-600 text-blue-600 bg-blue-50'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
               Documents
-              {!isEditMode && documents.length > 0 && (
-                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">
-                  {documents.length}
-                </span>
-              )}
             </button>
           </div>
         </div>
 
-        {/* Tab Content */}
+        {/* TAB CONTENT */}
         <div className="bg-white rounded-b-lg shadow-sm border border-slate-200 border-t-0 mb-6">
           <div className="p-4 sm:p-6 md:p-8">
-            
-            {/* Details Tab */}
-            <div className={activeTab === 'details' ? 'block' : 'hidden'}>
-              <form id="jobForm" onSubmit={handleSubmit}>
+            {activeTab === 'details' && (
+              <form onSubmit={handleSubmit}>
               <div className="space-y-6">
-                {/* Row 1 */}
+                {/* Row 1: Shipment & Route + Parties Involved */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
                   
                   {/* Shipment & Route Section */}
                   <div className="xl:col-span-2">
                     <JobFormSection title="Shipment & Route" icon={Ship}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Port of Loading */}
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <Anchor className="w-4 h-4 text-blue-500" />
@@ -311,6 +246,8 @@ const NewJobPage = () => {
                             placeholder="Enter port of loading"
                           />
                         </div>
+
+                        {/* Port of Discharge */}
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <Anchor className="w-4 h-4 text-blue-500" />
@@ -332,12 +269,14 @@ const NewJobPage = () => {
                           onChange={(e) => handleChange("service", e.target.value)}
                           options={["Import", "Export"]}
                         />
+
                         <FormSelect
                           label="TYPE"
                           value={form.shipmentType}
                           onChange={(e) => handleChange("shipmentType", e.target.value)}
                           options={["LCL", "FCL", "Part of FCL"]}
                         />
+
                         <FormSelect
                           label="MODE"
                           value={form.mode}
@@ -346,6 +285,7 @@ const NewJobPage = () => {
                           icon={form.mode === 'Sea' ? <Ship className="w-4 h-4 text-blue-600" /> : <Plane className="w-4 h-4 text-blue-600" />}
                           className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
+
                         <FormInput
                           label="VOLUME"
                           value={form.volume || ""}
@@ -358,6 +298,7 @@ const NewJobPage = () => {
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        {/* Vessel/Flight */}
                         <div>
                           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">VESSEL / FLIGHT</span>
                           <div className="flex gap-1 mt-1">
@@ -372,6 +313,7 @@ const NewJobPage = () => {
                             )}
                           </div>
                         </div>
+
                         <FormInput
                           label="CONTAINER NO"
                           value={form.containerNo || ""}
@@ -379,6 +321,7 @@ const NewJobPage = () => {
                           placeholder="Container No"
                           className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
                         />
+
                         <FormInput
                           label="ETA"
                           type="date"
@@ -387,6 +330,7 @@ const NewJobPage = () => {
                           placeholder="ETA"
                           className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
                         />
+
                         <FormInput
                           label="DELIVERED"
                           type="date"
@@ -402,33 +346,19 @@ const NewJobPage = () => {
                   <div className="xl:col-span-1">
                     <JobFormSection title="Parties Involved" icon={Users} className="bg-white border border-gray-200 rounded-lg p-8 h-full">
                       <div className="space-y-6">
-                        {/* Exporter */}
+                        {/* Exporter - CLEANED */}
                         <div>
                           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">EXPORTER NAME *</span>
                           <CompanyDropdown 
                             label="" 
                             value={form.exporterName} 
-                            companies={companies}
                             isEdit={true} 
-                            onChange={(name, address) => {
-                              if (name === form.consigneeName) {
-                                toast.error("Exporter and Consignee cannot be the same company.");
-                                return;
-                              }
-                              handleChange("exporterName", name);
-                              if(address) handleChange("exporterAddress", address);
-                            }}
-                            onAddNew={async (name, address) => {
-                              try {
-                                const newCompany = await createCompanyAPI({ name, address });
-                                setCompanies(prev => [...prev, newCompany]);
-                                toast.success("Company created!");
-                              } catch (err) {
-                                toast.error("Failed to create company");
-                              }
-                            }}
+                            onChange={(v) => handleChange("exporterName", v)}
+                            // Pass specific filter
                             placeholder="Select exporter..."
+                            typeFilter="Exporter"
                           />
+                          
                           <FormInput
                             label="EXPORTER ADDRESS"
                             type="textarea"
@@ -440,33 +370,19 @@ const NewJobPage = () => {
                           />
                         </div>
 
-                        {/* Consignee */}
+                        {/* Consignee - CLEANED */}
                         <div>
                           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">CONSIGNEE NAME</span>
                           <CompanyDropdown 
                             label="" 
                             value={form.consigneeName} 
-                            companies={companies}
                             isEdit={true} 
-                            onChange={(name, address) => {
-                              if (name === form.exporterName) {
-                                toast.error("Exporter and Consignee cannot be the same company.");
-                                return;
-                              }
-                              handleChange("consigneeName", name);
-                              if(address) handleChange("consigneeAddress", address);
-                            }}
-                            onAddNew={async (name, address) => {
-                              try {
-                                const newCompany = await createCompanyAPI({ name, address });
-                                setCompanies(prev => [...prev, newCompany]);
-                                toast.success("Company created!");
-                              } catch (err) {
-                                toast.error("Failed to create company");
-                              }
-                            }}
+                            onChange={(v) => handleChange("consigneeName", v)}
+                             // Pass specific filter
                             placeholder="Select importer..."
+                            typeFilter="Consignee"
                           />
+                          
                           <FormInput
                             label="CONSIGNEE ADDRESS"
                             type="textarea"
@@ -482,13 +398,14 @@ const NewJobPage = () => {
                   </div>
                 </div>
 
-                {/* Row 2 */}
+                {/* Row 2: Documentation References + Job Details */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
                   
                   {/* Documentation References Section */}
                   <div className="xl:col-span-2">
                     <JobFormSection title="Documentation References" icon={FileText}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Invoice Details */}
                         <div className="space-y-4">
                           <FormInput
                             label="INVOICE NO"
@@ -496,12 +413,14 @@ const NewJobPage = () => {
                             onChange={(e) => handleChange("invoiceNo", e.target.value)}
                             placeholder="Enter invoice number"
                           />
+
                           <FormInput
                             label="BILL OF ENTRY NO"
                             value={form.billOfEntryNo || ""}
                             onChange={(e) => handleChange("billOfEntryNo", e.target.value)}
                             placeholder="Enter bill of entry number"
                           />
+
                           <FormInput
                             label="SOB DATE"
                             type="date"
@@ -509,6 +428,8 @@ const NewJobPage = () => {
                             onChange={(e) => handleChange("sobDate", e.target.value)}
                           />
                         </div>
+
+                        {/* BL and Shipping Details */}
                         <div className="space-y-4">
                           <FormInput
                             label="INVOICE DATE"
@@ -516,12 +437,14 @@ const NewJobPage = () => {
                             value={form.invoiceDate || ""}
                             onChange={(e) => handleChange("invoiceDate", e.target.value)}
                           />
+
                           <FormInput
                             label="BL NO"
                             value={form.blNo || ""}
                             onChange={(e) => handleChange("blNo", e.target.value)}
                             placeholder="Enter BL number"
                           />
+
                           <FormInput
                             label="BL DATE"
                             type="date"
@@ -530,6 +453,7 @@ const NewJobPage = () => {
                           />
                         </div>
                       </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                         <FormInput
                           label="BILL OF ENTRY DATE"
@@ -537,6 +461,7 @@ const NewJobPage = () => {
                           value={form.billOfEntryDate || ""}
                           onChange={(e) => handleChange("billOfEntryDate", e.target.value)}
                         />
+
                         <FormInput
                           label="SHIPPING BILL NO"
                           value={form.shippingBillNo || ""}
@@ -547,44 +472,31 @@ const NewJobPage = () => {
                     </JobFormSection>
                   </div>
 
-                  {/* Job Details + Status */}
+                  {/* Job Details */}
                   <div className="xl:col-span-1">
                     <JobFormSection title="Job Details" icon={Package} className="bg-white border border-gray-200 rounded-lg p-8 h-full">
                       <div className="space-y-4">
-                        
-                        {/* --- NEW STATUS FIELD (Always Visible) --- */}
-                        <div>
-                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">JOB STATUS *</span>
-                            <select 
-                                value={form.status} 
-                                onChange={(e) => handleChange("status", e.target.value)}
-                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            >
-                                <option value="In Progress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Cancelled">Cancelled</option>
-                            </select>
-                        </div>
-
                         <FormInput
                           label="JOB NO *"
                           value={form.jobNo || ""}
                           onChange={(e) => handleChange("jobNo", e.target.value)}
                           placeholder="Enter job number"
                         />
+
                         <FormInput
                           label="JOB DATE"
                           type="date"
                           value={form.date || ""}
                           onChange={(e) => handleChange("date", e.target.value)}
                         />
+
                         <FormInput
                           label="NOTIFY PARTY"
                           value={form.notifyParty || ""}
                           onChange={(e) => handleChange("notifyParty", e.target.value)}
                           placeholder="Enter notify party"
                         />
+
                         <FormInput
                           label="FINAL DESTINATION"
                           value={form.finalDestination || ""}
@@ -596,71 +508,65 @@ const NewJobPage = () => {
                   </div>
                 </div>
               </div>
-              </form>
-            </div>
 
-            {/* Documents Tab */}
-            <div className={activeTab === 'documents' ? 'block' : 'hidden'}>
+              {/* SUBMIT BUTTONS */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => navigate("/dashboard")} 
+                  className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className={`px-6 py-3 rounded-lg flex items-center justify-center gap-2 text-white font-medium transition-colors ${
+                    loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {loading ? (
+                    <><span>Saving...</span></>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Create Job</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              </form>
+            )}
+
+            {activeTab === 'documents' && (
               <div className="-m-4 sm:-m-6 md:-m-8 p-4 sm:p-6 md:p-8">
                 <DocumentExplorer
                   documents={documents}
-                  currentFolder={{ id: id || 'temp', jobNo: form.jobNo || 'New Job', type: 'folder' }}
-                  isLoading={loadingDocs}
+                  currentFolder={{ jobNo: form.jobNo || 'New Job', type: 'folder' }}
+                  isLoading={false}
                   onDocumentClick={handleDocumentClick}
                   onUpload={handleFileUpload}
                   onDelete={handleDeleteDocument}
                   onDownload={handleDownloadDocument}
                   allowUpload={true}
-                  title={isEditMode ? "Job Documents" : "Attach Documents"}
-                  subtitle={isEditMode ? `Manage documents for ${form.jobNo}` : "Files will be uploaded when you click 'Create Job'"}
+                  title="Job Documents"
+                  subtitle={`Manage documents for ${form.jobNo ? `Job No ${form.jobNo}` : 'new job'}`}
                   showStats={false}
                   showBreadcrumb={false}
-                  documentTypes={[
-                    'Commercial Invoice',
-                    'Bill of Lading',
-                    'Packing List',
-                    'Certificate of Origin',
-                    'Other'
-                  ]}
                 />
               </div>
-            </div>
-
+            )}
           </div>
         </div>
-
-        {/* Global Save Button */}
-        <div className="flex justify-end gap-3 pb-8">
-          <button 
-            type="button" 
-            onClick={() => navigate("/dashboard")} 
-            className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSubmit} 
-            disabled={loading}
-            className={`px-6 py-3 rounded-lg flex items-center justify-center gap-2 text-white font-medium transition-colors ${
-              loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {loading ? (
-              <>
-                <Loader className="w-4 h-4 animate-spin" />
-                <span>{isEditMode ? 'Updating...' : 'Creating Job & Uploading...'}</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>{isEditMode ? 'Update Job' : 'Create Job'}</span>
-              </>
-            )}
-          </button>
-        </div>
-
       </div>
-      )}
+
+      {/* PDF Viewer Modal */}
+      <PdfViewerModal 
+        isOpen={showPdfViewer}
+        fileName={currentPdf?.name}
+        onClose={() => setShowPdfViewer(false)}
+        onDownload={handleDownloadDocument}
+      />
     </DashboardLayout>
   );
 };

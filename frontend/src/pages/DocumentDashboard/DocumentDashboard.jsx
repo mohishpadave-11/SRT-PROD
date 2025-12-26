@@ -1,125 +1,127 @@
 import { useState, useEffect } from 'react'
-import { getDocuments } from '../../services/api'
+import toast, { Toaster } from 'react-hot-toast'
+import { getJobsAPI } from '../../services/jobService'
+import { uploadDocumentAPI, getJobDocumentsAPI } from '../../services/documentService'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import DocumentExplorer from '../../components/dashboard/DocumentExplorer'
-import PdfViewerModal from '../../components/documentdashboardcomponents/PdfViewerModal'
-import useFolderSystem from '../../hooks/useFolderSystem'
+import useDocumentActions from '../../hooks/useDocumentActions'
 
 const DocumentDashboard = () => {
-  const [documents, setDocuments] = useState([])
+  const [items, setItems] = useState([])
+  const [currentFolder, setCurrentFolder] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  
-  // Use folder system hook
-  const { currentFolder, folderDocuments, openFolder, closeFolder, addDocuments, removeDocument } = useFolderSystem()
-  
-  // PDF Viewer state
-  const [showPdfViewer, setShowPdfViewer] = useState(false)
-  const [currentPdf, setCurrentPdf] = useState(null)
 
+  // Use document actions hook
+  const { handleDelete, handleDownload, handlePreview, handleShare } = useDocumentActions();
 
-
-
-
-  // Load documents on component mount
+  // 1. Initial Load: Fetch All Jobs and show as Folders
   useEffect(() => {
-    loadDocuments()
+    loadRootFolders()
   }, [])
 
-  const loadDocuments = async () => {
+  const loadRootFolders = async () => {
     setIsLoading(true)
+    setCurrentFolder(null)
     try {
-      const response = await getDocuments({})
-      if (response.success) {
-        setDocuments(response.data)
-      }
+      const jobs = await getJobsAPI()
+      const folders = jobs.map(job => ({
+        id: job.id,
+        name: `Job ${job.job_number}`,
+        jobNo: job.job_number,
+        type: 'folder',
+        size: '-',
+        dateModified: new Date(job.updatedAt).toLocaleDateString()
+      }))
+      setItems(folders)
     } catch (error) {
-      console.error('Failed to load documents:', error)
+      console.error('Failed to load jobs:', error)
+      toast.error('Failed to load jobs')
     } finally {
       setIsLoading(false)
     }
   }
 
+  // 2. Load Documents for a specific Job
+  const openJobFolder = async (folder) => {
+    setIsLoading(true)
+    setCurrentFolder(folder)
+    try {
+      const docs = await getJobDocumentsAPI(folder.id)
+      const files = docs.map(doc => ({
+        id: doc.id,
+        name: doc.original_name,
+        type: 'document',
+        size: (doc.size / 1024).toFixed(1) + ' KB',
+        dateModified: new Date(doc.updatedAt).toLocaleDateString(),
+        r2Key: doc.r2_key
+      }))
+      setItems(files)
+    } catch (error) {
+      toast.error("Failed to open folder")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
+  // --- Handlers ---
 
-  const handleDocumentClick = (document) => {
-    if (document.type === 'folder') {
-      // Open folder using the hook
-      openFolder(document)
+  // Document handlers using the hook
+  const handlePreviewDocument = (item) => handlePreview(item.id);
+  const handleDownloadDocument = (e, name, id) => {
+    if (e) e.stopPropagation();
+    const docId = id || items.find(i => i.name === name)?.id;
+    if (!docId) return;
+    handleDownload(docId, name);
+  };
+  const handleShareDocument = (type, documentId, documentName) => handleShare(type, documentId, documentName);
+  const handleDeleteDocument = (e, id, name) => {
+    if (e) e.stopPropagation();
+    handleDelete(id, name, () => openJobFolder(currentFolder));
+  };
+
+  // 3. MAIN CLICK HANDLER
+  const handleItemClick = (item) => {
+    if (item.type === 'folder') {
+      openJobFolder(item)
     } else {
-      // Handle document click - open PDF viewer for PDFs
-      if (document.name && document.name.toLowerCase().endsWith('.pdf')) {
-        setCurrentPdf(document)
-        setShowPdfViewer(true)
-      } else {
-        // For non-PDF documents, show a message or handle differently
-        alert(`Opening document: ${document.name || document.customerName}`)
+      handlePreviewDocument(item)
+    }
+  }
+
+  const handleBreadcrumbClick = () => {
+    loadRootFolders()
+  }
+
+  const handleFileUpload = async (files, documentType) => {
+    if (!currentFolder) return
+    try {
+      for (let i = 0; i < files.length; i++) {
+        await uploadDocumentAPI(currentFolder.id, documentType, files[i])
       }
-    }
-  }
-
-  const handleBreadcrumbClick = (breadcrumb) => {
-    if (breadcrumb.path === 'root') {
-      // Go back to main folder view using the hook
-      closeFolder()
-    }
-  }
-
-  // Upload handler
-  const handleFileUpload = (files, documentType) => {
-    const success = addDocuments(files, documentType)
-    
-    if (!success) {
-      alert('Please select a folder to upload documents to.')
-      return
-    }
-
-    alert(`Successfully uploaded ${files.length} document(s) as ${documentType}`)
-  }
-
-  // Delete document handler
-  const handleDeleteDocument = (e, documentId, documentName) => {
-    e.stopPropagation() // Prevent triggering the document click
-    
-    if (confirm(`Are you sure you want to delete "${documentName}"?`)) {
-      removeDocument(documentId)
-      alert(`"${documentName}" has been deleted successfully.`)
-    }
-  }
-
-  // Download document handler
-  const handleDownloadDocument = (e, documentName) => {
-    e.stopPropagation() // Prevent triggering the document click
-    
-    // Simulate download functionality
-    alert(`Downloading "${documentName}"...`)
-    // In a real application, you would trigger the actual download here
-    // For example: window.open(downloadUrl) or fetch and create blob
+      toast.success(`Successfully uploaded ${files.length} document(s)`)
+      openJobFolder(currentFolder)
+    } catch (e) { toast.error("Upload failed") }
   }
 
   return (
     <DashboardLayout>
+      <Toaster position="top-right" />
       <DocumentExplorer
-        documents={currentFolder ? folderDocuments : documents}
+        documents={items}
         currentFolder={currentFolder}
         isLoading={isLoading}
-        onDocumentClick={handleDocumentClick}
+        onDocumentClick={handleItemClick}
         onUpload={handleFileUpload}
         onDelete={handleDeleteDocument}
         onDownload={handleDownloadDocument}
+        onShare={handleShareDocument}
         allowUpload={!!currentFolder}
-        title="Document Dashboard"
-        subtitle="Organize and manage your job documents with ease"
-        showStats={true}
-        showBreadcrumb={true}
+        title={currentFolder ? currentFolder.name : "Job Folders"}
+        subtitle={currentFolder ? "Manage documents" : "Select a job to view documents"}
+        showStats={!currentFolder}
+        showBreadcrumb={!!currentFolder}
         onBreadcrumbClick={handleBreadcrumbClick}
-      />
-
-      {/* PDF Viewer Modal */}
-      <PdfViewerModal 
-        isOpen={showPdfViewer}
-        fileName={currentPdf?.name}
-        onClose={() => setShowPdfViewer(false)}
-        onDownload={handleDownloadDocument}
+        documentTypes={['Commercial Invoice', 'Bill of Lading', 'Packing List', 'Certificate of Origin', 'Other']}
       />
     </DashboardLayout>
   )

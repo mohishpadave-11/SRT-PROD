@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import ErrorBoundary from './components/ErrorBoundary'
 import LoginPage from './pages/login/LoginPage'
 import ForgotPasswordPage from './pages/login/ForgotPasswordPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
@@ -25,60 +26,68 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        {/* AUTH ROUTES */}
-        <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <ErrorBoundary fallbackMessage="The application encountered an error. Please refresh the page.">
+      <Router>
+        <Routes>
+          {/* AUTH ROUTES */}
+          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        {/* PROTECTED ROUTES */}
-        <Route 
-          path="/dashboard" 
-          element={isLoggedIn ? <DashboardPage /> : <Navigate to="/login" />} 
-        />
+          {/* PROTECTED ROUTES */}
+          <Route 
+            path="/dashboard" 
+            element={isLoggedIn ? <DashboardPage /> : <Navigate to="/login" />} 
+          />
 
-        <Route 
-          path="/jobs-dashboard" 
-          element={isLoggedIn ? <JobsDashboard /> : <Navigate to="/login" />} 
-        />
+          <Route 
+            path="/jobs-dashboard" 
+            element={isLoggedIn ? <JobsDashboard /> : <Navigate to="/login" />} 
+          />
 
-        {/* JOB DETAILS ROUTE */}
-        <Route 
-          path="/jobs/:id" 
-          element={isLoggedIn ? <JobDetailsPage /> : <Navigate to="/login" />} 
-        />
+          {/* JOB DETAILS ROUTE */}
+          <Route 
+            path="/jobs/:id" 
+            element={isLoggedIn ? <JobDetailsPage /> : <Navigate to="/login" />} 
+          />
 
-        {/* NEW JOB ROUTE */}
-        <Route 
-          path="/jobs/new" 
-          element={isLoggedIn ? <NewJobPage /> : <Navigate to="/login" />} 
-        />
+          {/* NEW JOB ROUTE */}
+          <Route 
+            path="/jobs/new" 
+            element={isLoggedIn ? <NewJobPage /> : <Navigate to="/login" />} 
+          />
+          
+          {/* EDIT JOB ROUTE */}
+          <Route 
+            path="/jobs/:id/edit" 
+            element={isLoggedIn ? <NewJobPage /> : <Navigate to="/login" />} 
+          />
 
-        {/* ADMIN PROFILE ROUTE */}
-        <Route 
-          path="/admin/profile" 
-          element={isLoggedIn ? <AdminProfilePage /> : <Navigate to="/login" />} 
-        />
+          {/* ADMIN PROFILE ROUTE */}
+          <Route 
+            path="/admin/profile" 
+            element={isLoggedIn ? <AdminProfilePage /> : <Navigate to="/login" />} 
+          />
 
-        {/* COMPANY MANAGEMENT ROUTE */}
-        <Route 
-          path="/admin/companies" 
-          element={isLoggedIn ? <CompanyManagement /> : <Navigate to="/login" />} 
-        />
+          {/* COMPANY MANAGEMENT ROUTE */}
+          <Route 
+            path="/admin/companies" 
+            element={isLoggedIn ? <CompanyManagement /> : <Navigate to="/login" />} 
+          />
 
-        {/* DOCUMENT DASHBOARD ROUTE */}
-        <Route 
-          path="/document-dashboard" 
-          element={isLoggedIn ? <DocumentDashboard /> : <Navigate to="/login" />} 
-        />
+          {/* DOCUMENT DASHBOARD ROUTE */}
+          <Route 
+            path="/document-dashboard" 
+            element={isLoggedIn ? <DocumentDashboard /> : <Navigate to="/login" />} 
+          />
 
-        {/* DEFAULT REDIRECT */}
-        <Route 
-          path="/" 
-          element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} />} 
-        />
-      </Routes>
-    </Router>
+          {/* DEFAULT REDIRECT */}
+          <Route 
+            path="/" 
+            element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} />} 
+          />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   )
 }
 

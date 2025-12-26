@@ -4,123 +4,118 @@ import DocumentGrid from '../documentdashboardcomponents/DocumentGrid'
 import FileUploader from '../documentdashboardcomponents/FileUploader'
 import PaginationControls from '../documentdashboardcomponents/PaginationControls'
 
+const DEFAULT_DOC_TYPES = [
+  'Invoice', 'PackingList', 'BL', 'Insurance', 'COO',
+  'ShippingBill', 'BillOfEntry', 'CustomsDeclaration',
+  'DeliveryOrder', 'CargoManifest', 'ExportLicense',
+  'OriginCertificate', 'WeightCertificate',
+  'QualityCertificate', 'HealthCertificate', 'Other'
+];
+
 const DocumentExplorer = ({
   documents = [],
   currentFolder = null,
   isLoading = false,
-  onDocumentClick = () => {},
-  onUpload = () => {},
-  onDelete = () => {},
-  onDownload = () => {},
+  onDocumentClick = () => { },
+  onUpload = () => { },
+  onDelete = () => { },
+  onDownload = () => { },
+  onShare = () => { },
   allowUpload = true,
   title = "Documents",
   subtitle = "Manage your documents",
   showStats = false,
   showBreadcrumb = false,
-  onBreadcrumbClick = () => {}
+  onBreadcrumbClick = () => { },
+  // Allow parent to override types (e.g. JobDetails passes only 5)
+  documentTypes = DEFAULT_DOC_TYPES
 }) => {
-  // Internal state for UI controls
-  const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
+  // --- UI State ---
+  const [viewMode, setViewMode] = useState('grid')
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [sortBy, setSortBy] = useState('')
+  const [dateFilter, setDateFilter] = useState('') // YYYY-MM-DD from input
 
-  // Document types for uploader
-  const documentTypes = [
-    'Invoice',
-    'PackingList', 
-    'BL',
-    'Insurance',
-    'COO',
-    'ShippingBill',
-    'BillOfEntry',
-    'CustomsDeclaration',
-    'DeliveryOrder',
-    'CargoManifest',
-    'ExportLicense',
-    'OriginCertificate',
-    'WeightCertificate',
-    'QualityCertificate',
-    'HealthCertificate'
-  ]
+  // --- Pagination Config ---
+  const ITEMS_PER_PAGE = 24 // Adjusted for better grid layout (4x6 or 3x8)
 
-  // Pagination constants
-  const ITEMS_PER_PAGE = 40
-
-  // Internal filtering logic
+  // --- Filtering Logic ---
   const filteredDocuments = useMemo(() => {
+    if (!documents) return [];
+
     let filtered = [...documents]
 
-    // Apply search filter
+    // 1. Search Filter
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase()
-      filtered = filtered.filter(doc => 
+      filtered = filtered.filter(doc =>
         (doc.name && doc.name.toLowerCase().includes(searchLower)) ||
         (doc.jobNo && doc.jobNo.toLowerCase().includes(searchLower)) ||
         (doc.customerName && doc.customerName.toLowerCase().includes(searchLower))
       )
     }
 
-    // Apply date sorting if specified
-    if (sortBy) {
+    // 2. Date Filter
+    if (dateFilter) {
       filtered = filtered.filter(doc => {
-        if (doc.dateModified) {
-          // Convert DD-MM-YYYY to YYYY-MM-DD for comparison
-          const docDate = doc.dateModified.split('-').reverse().join('-')
-          return docDate === sortBy
-        }
-        return false
+        if (!doc.dateModified) return false;
+        // Backend/Mock data is DD-MM-YYYY (e.g., "22-11-2025")
+        // Input is YYYY-MM-DD (e.g., "2025-11-22")
+        try {
+          // Standardize both to timestamps for comparison or just string match
+          const parts = doc.dateModified.split('-'); // ["22", "11", "2025"]
+          if (parts.length === 3) {
+            const docDateISO = `${parts[2]}-${parts[1]}-${parts[0]}`; // "2025-11-22"
+            return docDateISO === dateFilter;
+          }
+          return false;
+        } catch (e) { return false; }
       })
     }
 
     return filtered
-  }, [documents, searchTerm, sortBy])
+  }, [documents, searchTerm, dateFilter])
 
-  // Internal pagination logic
+  // --- Pagination Logic ---
   const totalItems = filteredDocuments.length
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-  const endIndex = startIndex + ITEMS_PER_PAGE
-  const currentDocuments = filteredDocuments.slice(startIndex, endIndex)
+  const currentDocuments = filteredDocuments.slice(startIndex, startIndex + ITEMS_PER_PAGE)
 
-  // Reset pagination when search changes
+  // --- Handlers ---
   const handleSearchChange = (value) => {
     setSearchTerm(value)
-    setCurrentPage(1)
+    setCurrentPage(1) // Reset to page 1 on search
   }
 
-  const handleSortChange = (value) => {
-    setSortBy(value)
+  const handleDateFilterChange = (value) => {
+    setDateFilter(value)
     setCurrentPage(1)
   }
 
   const handlePageChange = (page) => {
-    setCurrentPage(page)
-    // Scroll to top when changing pages
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleApplyFilters = () => {
-    // Filters are applied automatically via useMemo
-    setCurrentPage(1)
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+      document.getElementById('explorer-top')?.scrollIntoView({ behavior: 'smooth' })
+    }
   }
 
   const handleClearFilters = () => {
     setSearchTerm('')
-    setSortBy('')
+    setDateFilter('')
     setCurrentPage(1)
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Header Section */}
+    <div className="space-y-6 sm:space-y-8" id="explorer-top">
+      {/* 1. Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
         <div className="flex-1">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{title}</h1>
           <p className="text-gray-600 mt-1 sm:mt-2 text-base sm:text-lg">{subtitle}</p>
-          
-          {/* Breadcrumb Navigation */}
+
+          {/* Breadcrumbs */}
           {showBreadcrumb && currentFolder && (
             <div className="flex items-center gap-2 mt-2 sm:mt-3 text-sm">
               <button
@@ -128,82 +123,54 @@ const DocumentExplorer = ({
                 className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
               >
                 <Home className="w-4 h-4" />
-                <span className="hidden xs:inline">Documents</span>
-                <span className="xs:hidden">Docs</span>
+                <span className="hidden xs:inline">All Jobs</span>
+                <span className="xs:hidden">Jobs</span>
               </button>
               <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-700 font-medium">{currentFolder.jobNo}</span>
-              <span className="text-gray-500 hidden xs:inline">({documents.length} items)</span>
-              <span className="text-gray-500 xs:hidden">({documents.length})</span>
+              <span className="text-gray-700 font-medium">Job {currentFolder.jobNo}</span>
+              <span className="text-gray-400 text-xs ml-2">({documents.length} items)</span>
             </div>
           )}
         </div>
-        
+
         {/* Stats Cards */}
         {showStats && (
-          <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4 w-full lg:w-auto lg:min-w-[400px]">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full lg:w-auto lg:min-w-[400px]">
             {currentFolder ? (
-              // Inside folder view - show folder-specific stats
               <>
-                <div className="bg-blue-50 rounded-lg p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h3 className="text-xs sm:text-sm font-medium text-gray-600 flex-1 pr-2 sm:pr-3">Total Documents</h3>
-                    <div className="flex-shrink-0">
-                      <FileText className="w-5 h-5 sm:w-7 sm:h-7 text-gray-600" />
-                    </div>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-600">Total Files</span>
+                    <FileText className="w-5 h-5 text-blue-500" />
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">{documents.length}</div>
-                  <div className="text-xs sm:text-sm text-green-600">
-                    <span className="hidden xs:inline">In {currentFolder.jobNo}</span>
-                    <span className="xs:hidden">{currentFolder.jobNo}</span>
-                  </div>
+                  <div className="text-2xl font-bold text-gray-800">{documents.length}</div>
                 </div>
-
-                <div className="bg-purple-50 rounded-lg p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h3 className="text-xs sm:text-sm font-medium text-gray-600 flex-1 pr-2 sm:pr-3">Folder Size</h3>
-                    <div className="flex-shrink-0">
-                      <Folder className="w-5 h-5 sm:w-7 sm:h-7 text-gray-600" />
-                    </div>
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-600">Folder Size</span>
+                    <Folder className="w-5 h-5 text-purple-500" />
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">
-                    {Math.floor(documents.reduce((acc, doc) => acc + parseInt(doc.size || '0'), 0) / 1024)}MB
-                  </div>
-                  <div className="text-xs sm:text-sm text-blue-600">
-                    <span className="hidden xs:inline">Total size</span>
-                    <span className="xs:hidden">Size</span>
+                  <div className="text-2xl font-bold text-gray-800">
+                    {/* Calculate approximate size if string (e.g. "100KB") or number */}
+                    {Math.floor(documents.reduce((acc, doc) => acc + (parseInt(doc.size) || 0), 0) / 1024)} MB
                   </div>
                 </div>
               </>
             ) : (
-              // Main folder view - show original stats
               <>
-                <div className="bg-green-50 rounded-lg p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h3 className="text-xs sm:text-sm font-medium text-gray-600 flex-1 pr-2 sm:pr-3">Folders</h3>
-                    <div className="flex-shrink-0">
-                      <Folder className="w-5 h-5 sm:w-7 sm:h-7 text-gray-600" />
-                    </div>
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-600">Active Jobs</span>
+                    <Folder className="w-5 h-5 text-green-500" />
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">{documents.filter(d => d.type === 'folder').length}</div>
-                  <div className="text-xs sm:text-sm text-green-600">
-                    <span className="hidden xs:inline">▲ +5% from last month</span>
-                    <span className="xs:hidden">▲ +5%</span>
-                  </div>
+                  <div className="text-2xl font-bold text-gray-800">{documents.filter(d => d.type === 'folder').length}</div>
                 </div>
-
-                <div className="bg-orange-50 rounded-lg p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h3 className="text-xs sm:text-sm font-medium text-gray-600 flex-1 pr-2 sm:pr-3">Documents</h3>
-                    <div className="flex-shrink-0">
-                      <FileText className="w-5 h-5 sm:w-7 sm:h-7 text-gray-600" />
-                    </div>
+                <div className="bg-orange-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-600">Total Docs</span>
+                    <FileText className="w-5 h-5 text-orange-500" />
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">{documents.filter(d => d.type !== 'folder').length}</div>
-                  <div className="text-xs sm:text-sm text-red-600">
-                    <span className="hidden xs:inline">▼ -2% from last month</span>
-                    <span className="xs:hidden">▼ -2%</span>
-                  </div>
+                  <div className="text-2xl font-bold text-gray-800">{documents.filter(d => d.type !== 'folder').length}</div>
                 </div>
               </>
             )}
@@ -211,138 +178,127 @@ const DocumentExplorer = ({
         )}
       </div>
 
-      {/* Enhanced Search and Filter Bar */}
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between">
-            {/* Search Section */}
-            <div className="flex-1 w-full sm:max-w-2xl">
-              <div className="relative">
-                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search documents, jobs..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 bg-gray-50 border-0 rounded-lg sm:rounded-xl text-gray-900 placeholder-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 text-sm sm:text-base"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => handleSearchChange('')}
-                    className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full transition-colors"
-                  >
-                    <X className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
-                  </button>
-                )}
-              </div>
+      {/* 2. Controls Bar (Search & Filter) */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-2xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name, job number..."
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
+              {searchTerm && (
+                <button onClick={() => handleSearchChange('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
-            {/* Controls Section */}
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
-              {/* View Mode Toggle */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
+            {/* Right Side Controls */}
+            <div className="flex items-center gap-2">
+              {/* View Toggle */}
+              <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-md transition-all ${
-                    viewMode === 'grid' 
-                      ? 'bg-white shadow-sm text-blue-600' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-md transition-all ${
-                    viewMode === 'list' 
-                      ? 'bg-white shadow-sm text-blue-600' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   <List className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Filter Toggle */}
+              {/* Filter Button */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
-                  showFilters 
-                    ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border font-medium transition-all ${showFilters || dateFilter
+                    ? 'bg-blue-50 border-blue-200 text-blue-700'
                     : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <Filter className="w-4 h-4" />
-                <span className="font-medium">Filters</span>
+                <span className="hidden sm:inline">Filters</span>
+                {(dateFilter) && <span className="w-2 h-2 bg-blue-600 rounded-full"></span>}
                 <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
               </button>
             </div>
           </div>
 
-          {/* Enhanced Collapsible Filters */}
+          {/* Collapsible Filter Panel */}
           {showFilters && (
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort by Date</label>
+            <div className="mt-4 pt-4 border-t border-gray-100 animate-in slide-in-from-top-2">
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="w-full sm:w-auto">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Filter by Date</label>
                   <input
                     type="date"
-                    value={sortBy}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 border-0 rounded-lg text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                    value={dateFilter}
+                    onChange={(e) => handleDateFilterChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
 
-                <div className="flex items-end gap-2">
-                  <button
-                    onClick={handleApplyFilters}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium"
-                  >
-                    Apply
-                  </button>
+                {dateFilter && (
                   <button
                     onClick={handleClearFilters}
-                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
+                    className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                   >
-                    Clear
+                    Clear Filters
                   </button>
-                </div>
+                )}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Upload Section */}
+      {/* 3. Upload Section */}
       {allowUpload && (
-        <FileUploader 
-          onUpload={onUpload}
-          documentTypes={documentTypes}
-        />
+        <div className="animate-in fade-in duration-300">
+          <FileUploader
+            onUpload={onUpload}
+            documentTypes={documentTypes} // Passed from props
+          />
+        </div>
       )}
 
-      {/* Mac Finder Style Documents Display */}
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden" style={{ backgroundColor: '#f7f7f7' }}>
-        <DocumentGrid 
-          documents={currentDocuments}
-          viewMode={viewMode}
-          isLoading={isLoading}
-          currentFolder={currentFolder}
-          onDocumentClick={onDocumentClick}
-          onDelete={onDelete}
-          onDownload={onDownload}
-        />
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <PaginationControls 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            totalItems={totalItems}
-            onPageChange={handlePageChange}
+      {/* 4. Document Grid / List */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[400px] flex flex-col">
+        <div className="flex-1 bg-gray-50/50">
+          <DocumentGrid
+            documents={currentDocuments}
+            viewMode={viewMode}
+            isLoading={isLoading}
+            currentFolder={currentFolder}
+            onDocumentClick={onDocumentClick}
+            onDelete={onDelete}
+            onDownload={onDownload}
+            onShare={onShare}
           />
+        </div>
+
+        {/* 5. Pagination */}
+        {totalItems > 0 && (
+          <div className="border-t border-gray-200 bg-white p-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              startIndex={startIndex}
+              endIndex={Math.min(startIndex + ITEMS_PER_PAGE, totalItems)}
+              totalItems={totalItems}
+              onPageChange={handlePageChange}
+            />
+          </div>
         )}
       </div>
     </div>

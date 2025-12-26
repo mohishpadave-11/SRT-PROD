@@ -1,4 +1,5 @@
-import { FileText, Trash2, Download, X } from 'lucide-react'
+import { FileText, Trash2, Download, X, Share2, MessageCircle, Mail } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 import LoadingSpinner from '../LoadingSpinner'
 
 // Mac Finder Folder Icon Component - Exact Match
@@ -52,8 +53,27 @@ const DocumentGrid = ({
   currentFolder, 
   onDocumentClick, 
   onDelete, 
-  onDownload 
+  onDownload,
+  onShare = () => {}
 }) => {
+  const [activeSharePopup, setActiveSharePopup] = useState(null)
+  const popupRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setActiveSharePopup(null)
+      }
+    }
+
+    if (activeSharePopup) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [activeSharePopup])
   if (isLoading) {
     return (
       <div className="flex flex-col justify-center items-center py-12 sm:py-20">
@@ -95,7 +115,7 @@ const DocumentGrid = ({
             <div
               key={document.id}
               onClick={() => onDocumentClick(document)}
-              className="group flex flex-col items-center cursor-pointer transition-all duration-200 hover:scale-105"
+              className="flex flex-col items-center cursor-pointer transition-all duration-200 hover:scale-105"
             >
               {/* Mac Finder Style Folder */}
               <div className="mb-1 sm:mb-2">
@@ -110,7 +130,7 @@ const DocumentGrid = ({
 
               {/* Document Name */}
               <div className="text-center w-full px-1">
-                <p className="text-xs sm:text-xs text-gray-800 group-hover:text-blue-700 transition-colors font-medium leading-tight break-words">
+                <p className="text-xs sm:text-xs text-gray-800 hover:text-blue-700 transition-colors font-medium leading-tight break-words">
                   {currentFolder ? document.name : document.jobNo}
                 </p>
                 {currentFolder && document.size && (
@@ -127,6 +147,54 @@ const DocumentGrid = ({
                     >
                       <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActiveSharePopup(activeSharePopup === document.id ? null : document.id)
+                        }}
+                        className="p-1 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded transition-all duration-200"
+                        title={`Share ${document.name}`}
+                      >
+                        <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                      
+                      {/* Click Popup */}
+                      {activeSharePopup === document.id && (
+                        <div 
+                          ref={popupRef}
+                          className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50"
+                        >
+                          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[140px]">
+                            <button 
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                onShare('whatsapp', document.id, document.name);
+                                window.open('https://web.whatsapp.com/', '_blank');
+                                setActiveSharePopup(null);
+                              }}
+                              className="flex items-center gap-2 w-full p-2 rounded hover:bg-green-50 transition-colors text-left"
+                            >
+                              <MessageCircle className="w-3 h-3 text-green-600" />
+                              <span className="text-xs font-medium">WhatsApp</span>
+                            </button>
+                            
+                            <button 
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                onShare('gmail', document.id, document.name);
+                                window.open('https://mail.google.com/', '_blank');
+                                setActiveSharePopup(null);
+                              }}
+                              className="flex items-center gap-2 w-full p-2 rounded hover:bg-red-50 transition-colors text-left"
+                            >
+                              <Mail className="w-3 h-3 text-red-600" />
+                              <span className="text-xs font-medium">Gmail</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={(e) => onDelete(e, document.id, document.name)}
                       className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all duration-200"
@@ -146,7 +214,7 @@ const DocumentGrid = ({
             <div
               key={document.id}
               onClick={() => onDocumentClick(document)}
-              className="group flex items-center gap-4 p-3 rounded-lg hover:bg-white/50 cursor-pointer transition-all duration-200"
+              className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/50 cursor-pointer transition-all duration-200"
             >
               {/* Use the same Mac Finder folder design */}
               <div className="flex-shrink-0">
@@ -160,7 +228,7 @@ const DocumentGrid = ({
               </div>
               
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 group-hover:text-blue-700 transition-colors truncate">
+                <p className="font-medium text-gray-900 hover:text-blue-700 transition-colors truncate">
                   {currentFolder ? document.name : document.jobNo}
                 </p>
                 <p className="text-sm text-gray-500">
@@ -180,6 +248,54 @@ const DocumentGrid = ({
                   >
                     <Download className="w-4 h-4" />
                   </button>
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActiveSharePopup(activeSharePopup === document.id ? null : document.id)
+                      }}
+                      className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-all duration-200"
+                      title={`Share ${document.name}`}
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                    
+                    {/* Click Popup */}
+                    {activeSharePopup === document.id && (
+                      <div 
+                        ref={popupRef}
+                        className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50"
+                      >
+                        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[140px]">
+                          <button 
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              onShare('whatsapp', document.id, document.name);
+                              window.open('https://web.whatsapp.com/', '_blank');
+                              setActiveSharePopup(null);
+                            }}
+                            className="flex items-center gap-2 w-full p-2 rounded hover:bg-green-50 transition-colors text-left"
+                          >
+                            <MessageCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-medium">WhatsApp</span>
+                          </button>
+                          
+                          <button 
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              onShare('gmail', document.id, document.name);
+                              window.open('https://mail.google.com/', '_blank');
+                              setActiveSharePopup(null);
+                            }}
+                            className="flex items-center gap-2 w-full p-2 rounded hover:bg-red-50 transition-colors text-left"
+                          >
+                            <Mail className="w-4 h-4 text-red-600" />
+                            <span className="text-sm font-medium">Gmail</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={(e) => onDelete(e, document.id, document.name)}
                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"

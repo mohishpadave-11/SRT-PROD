@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { ChevronDown, X, Plus } from 'lucide-react'
 
-const CompanyDropdown = ({ 
-  label, 
-  value, 
-  onChange, 
-  companies = [], 
+const CompanyDropdown = ({
+  label,
+  value,
+  onChange,
+  companies = [],
   isEdit = false,
   placeholder = "Select company...",
-  onAddNew = null 
+  onAddNew = null
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -65,11 +65,11 @@ const CompanyDropdown = ({
             {isOpen && (
               <>
                 {/* Backdrop */}
-                <div 
-                  className="fixed inset-0 z-10" 
+                <div
+                  className="fixed inset-0 z-10"
                   onClick={() => setIsOpen(false)}
                 />
-                
+
                 {/* Dropdown Options */}
                 <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto top-full mt-1">
                   <div className="py-1">
@@ -84,18 +84,17 @@ const CompanyDropdown = ({
                     >
                       {placeholder}
                     </button>
-                    
+
                     {/* Company Options */}
                     {companies.map(company => (
                       <button
                         key={company.id}
                         type="button"
                         onClick={() => handleSelect(company)}
-                        className={`w-full text-left px-4 py-2 transition-colors ${
-                          value === company.name 
-                            ? 'bg-blue-50 text-blue-700 font-medium' 
+                        className={`w-full text-left px-4 py-2 transition-colors ${value === company.name
+                            ? 'bg-blue-50 text-blue-700 font-medium'
                             : 'text-gray-900 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         <div>
                           <div className="font-medium">{company.name}</div>
@@ -125,12 +124,12 @@ const CompanyDropdown = ({
               <>
                 {/* Backdrop */}
                 <div className="fixed inset-0 z-30 bg-black bg-opacity-50" />
-                
+
                 {/* Modal */}
                 <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
                   <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Company</h3>
-                    
+
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
@@ -142,7 +141,7 @@ const CompanyDropdown = ({
                           placeholder="Enter company name"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                         <textarea

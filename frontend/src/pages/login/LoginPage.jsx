@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { Ship, Eye, EyeOff } from 'lucide-react'
 import logo from '../../assets/srtship-logo.png'
+import { loginAPI } from '../../services/authService' // IMPORT THIS
+import { useAuth } from '../../store/AuthContext';
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate()
@@ -19,7 +21,8 @@ const LoginPage = ({ onLogin }) => {
   }
 
   const validatePassword = (value) => {
-    return value.length >= 6
+    // Backend likely handles complex validation, frontend just checks presence
+    return value.length >= 1 
   }
 
   const handleSubmit = async (e) => {
@@ -35,7 +38,7 @@ const LoginPage = ({ onLogin }) => {
     }
 
     if (!validatePassword(password)) {
-      setPasswordError('Password must be at least 6 characters.')
+      setPasswordError('Please enter your password.')
       valid = false
     } else {
       setPasswordError('')
@@ -44,42 +47,18 @@ const LoginPage = ({ onLogin }) => {
     if (valid) {
       setIsLoading(true)
       try {
-        // For development - bypass backend and use mock login
-        if (email === 'admin@test.com' && password === 'password') {
-          const mockUser = { id: 1, name: 'Admin User', email: 'admin@test.com' }
-          const mockToken = 'mock-jwt-token-' + Date.now()
-          
-          localStorage.setItem('user', JSON.stringify(mockUser))
-          localStorage.setItem('token', mockToken)
-          if (onLogin) {
-            onLogin()
-          }
-          navigate('/dashboard')
-          return
+        // --- REAL BACKEND CALL ---
+        await loginAPI(email, password)
+        
+        // If successful (no error thrown)
+        if (onLogin) {
+          onLogin()
         }
+        navigate('/dashboard')
+        // -------------------------
 
-        const response = await fetch('http://localhost:3001/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          localStorage.setItem('user', JSON.stringify(data.user))
-          localStorage.setItem('token', data.token)
-          if (onLogin) {
-            onLogin()
-          }
-          navigate('/dashboard')
-        } else {
-          setLoginError(data.message || 'Invalid credentials')
-        }
       } catch (error) {
-        setLoginError('Unable to connect to server. Use admin@test.com / password for demo.')
+        setLoginError(error) // Display the error message from backend
         console.error('Login error:', error)
       } finally {
         setIsLoading(false)
@@ -110,27 +89,6 @@ const LoginPage = ({ onLogin }) => {
             <p className="text-blue-100 text-lg">
               Manage your shipping operations, track jobs, and streamline your logistics workflow.
             </p>
-            
-            <div className="mt-12 space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Ship className="w-5 h-5" />
-                </div>
-                <span className="text-blue-50">Track shipments in real-time</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Ship className="w-5 h-5" />
-                </div>
-                <span className="text-blue-50">Manage parties and invoices</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Ship className="w-5 h-5" />
-                </div>
-                <span className="text-blue-50">Analytics and reporting</span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -139,11 +97,6 @@ const LoginPage = ({ onLogin }) => {
           <div className="flex flex-col items-left mb-8">
             <h2 className="text-3xl font-bold mb-2 text-gray-800">Sign In</h2>
             <p className="text-gray-600">Enter your credentials to access your account</p>
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700 font-medium">Demo Credentials:</p>
-              <p className="text-sm text-blue-600">Email: admin@test.com</p>
-              <p className="text-sm text-blue-600">Password: password</p>
-            </div>
           </div>
 
           {loginError && (
@@ -166,14 +119,8 @@ const LoginPage = ({ onLogin }) => {
                 }`}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                aria-invalid={!!emailError}
-                aria-describedby="email-error"
               />
-              {emailError && (
-                <p id="email-error" className="text-red-500 text-xs mt-1">
-                  {emailError}
-                </p>
-              )}
+              {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
             </div>
 
             <div>
@@ -190,23 +137,16 @@ const LoginPage = ({ onLogin }) => {
                   }`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  aria-invalid={!!passwordError}
-                  aria-describedby="password-error"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {passwordError && (
-                <p id="password-error" className="text-red-500 text-xs mt-1">
-                  {passwordError}
-                </p>
-              )}
+              {passwordError && <p className="text-red-500 text-xs mt-1">{passwordError}</p>}
             </div>
 
             <div className="flex items-center justify-between text-sm">
@@ -230,10 +170,6 @@ const LoginPage = ({ onLogin }) => {
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
-
-            <div className="text-center text-gray-500 text-sm mt-4">
-              © 2025 SRT Shipping Pvt. Ltd. All rights reserved.
-            </div>
           </form>
         </div>
       </div>

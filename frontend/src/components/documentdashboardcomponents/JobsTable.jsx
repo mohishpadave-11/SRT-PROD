@@ -1,12 +1,18 @@
 import { Eye, Edit, Trash2 } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast' // ✅ Import Toast
+import useDocumentActions from '../../hooks/useDocumentActions';
 
-const JobsTable = ({ 
-  jobs, 
-  selectedIds, 
-  onSelectAll, 
-  onSelectRow, 
-  onNavigate 
+const JobsTable = ({
+  jobs,
+  selectedIds,
+  onSelectAll,
+  onSelectRow,
+  onNavigate,
+  onDelete
 }) => {
+  // Use document actions hook for delete confirmation
+  const { handleDelete } = useDocumentActions();
+
   const handleRowClick = (jobId) => {
     onNavigate(`/jobs/${jobId}`)
   }
@@ -18,18 +24,21 @@ const JobsTable = ({
 
   const handleEditClick = (e, jobId) => {
     e.stopPropagation()
-    onNavigate(`/jobs/${jobId}`, { state: { edit: true } })
+    onNavigate(`/jobs/${jobId}/edit`)
   }
 
   const handleDeleteClick = (e, job) => {
-    e.stopPropagation()
-    if (confirm(`Delete job ${job.jobNo}?`)) {
-      alert('Deleted (mock)')
-    }
-  }
+    e.stopPropagation();
+    handleDelete(job.id, `Job ${job.job_number}`, () => {
+      onDelete(job.id);
+    });
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
+      {/* ✅ Add Toaster to render the popups */}
+      <Toaster position="top-right" />
+
       <div className="overflow-hidden rounded-t-lg">
         {/* TABLE WRAPPER - Horizontal scrolling for mobile */}
         <div className="overflow-x-auto w-full">
@@ -42,7 +51,7 @@ const JobsTable = ({
                   <input
                     type="checkbox"
                     onChange={onSelectAll}
-                    checked={selectedIds.length === jobs.length}
+                    checked={jobs.length > 0 && selectedIds.length === jobs.length}
                     onClick={(e) => e.stopPropagation()}
                     className="rounded border-gray-300"
                   />
@@ -82,19 +91,21 @@ const JobsTable = ({
                     />
                   </td>
 
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.jobNo}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.date}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.exporterName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700 truncate max-w-[200px]" title={job.exporterAddress}>{job.exporterAddress}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.consigneeName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700 truncate max-w-[200px]" title={job.consigneeAddress}>{job.consigneeAddress}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.notifyParty}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.portOfLoading}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.portOfDischarge}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.finalDestination}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.invoiceNo}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{job.invoiceDate}</td>
+                  {/* Data Columns */}
+                  <td className="px-4 py-3 text-sm text-gray-700 font-medium">{job.job_number}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.job_date}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.exporter_name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 truncate max-w-[200px]" title={job.exporter_address}>{job.exporter_address}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.consignee_name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 truncate max-w-[200px]" title={job.consignee_address}>{job.consignee_address}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.notify_party}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.port_of_loading}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.port_of_discharge}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.final_destination}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.invoice_no}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{job.invoice_date}</td>
 
+                  {/* Action Buttons (Inline UI Preserved) */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <button
@@ -128,10 +139,10 @@ const JobsTable = ({
       </div>
 
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white">
-        <span className="text-sm text-gray-500">Showing 1 to 20 of 37 results</span>
+        <span className="text-sm text-gray-500">Showing {jobs.length} results</span>
         <div className="flex gap-2">
-           <button className="px-3 py-1 border rounded text-xs hover:bg-gray-50 disabled:opacity-50" disabled>Previous</button>
-           <button className="px-3 py-1 border rounded text-xs hover:bg-gray-50">Next</button>
+          <button className="px-3 py-1 border rounded text-xs hover:bg-gray-50 disabled:opacity-50" disabled>Previous</button>
+          <button className="px-3 py-1 border rounded text-xs hover:bg-gray-50 disabled:opacity-50" disabled>Next</button>
         </div>
       </div>
     </div>
