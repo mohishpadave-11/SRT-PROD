@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Point to your local backend
-const API_URL = 'http://localhost:3001/api/auth';
+const API_URL = `${import.meta.env.VITE_API_URL}/auth` || 'http://localhost:3001/api/auth';
 
 // Create axios instance
 const axiosInstance = axios.create({

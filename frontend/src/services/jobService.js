@@ -2,7 +2,7 @@ import axios from 'axios';
 import { handleError } from '../utils/errorHandler';
 
 // Point to your Backend Job Route
-const API_URL = 'http://localhost:3001/api/jobs';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/jobs';
 
 // Helper function to get the token from localStorage
 const getAuthConfig = () => {
