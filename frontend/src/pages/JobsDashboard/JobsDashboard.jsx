@@ -185,6 +185,12 @@ const JobsDashboard = () => {
     }
   }
 
+  const handleJobDeleted = (jobId) => {
+    // Only update local state, don't call API
+    setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+    setSelectedJobs(prevSelected => prevSelected.filter(id => id !== jobId));
+  }
+
   const handleExport = () => {
     // Export the FILTERED list, not the full list
     if (displayedJobs.length === 0) {
@@ -245,7 +251,7 @@ const JobsDashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <Loading variant="page" size="md" />
+        <Loading variant="page" size="lg" />
       </DashboardLayout>
     )
   }
@@ -418,7 +424,7 @@ const JobsDashboard = () => {
           onSelectAll={handleSelectAll}
           onSelectRow={handleSelectJob}
           onNavigate={handleNavigate}
-          onDelete={handleDeleteJob}
+          onDelete={handleJobDeleted}
         />
       </div>
     </DashboardLayout>

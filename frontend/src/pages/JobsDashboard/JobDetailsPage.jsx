@@ -231,16 +231,17 @@ const JobDetailsPage = () => {
   };
 
   const handleFileUpload = async (files, documentType) => {
+    if (!id) return
     try {
-        for (let i = 0; i < files.length; i++) {
-            await uploadDocumentAPI(id, documentType, files[i]);
-        }
-        notify.success("Documents uploaded successfully!");
-        loadDocuments();
-    } catch (err) {
-        notify.error("Upload failed: " + err.message);
+      for (let i = 0; i < files.length; i++) {
+        await uploadDocumentAPI(id, documentType, files[i])
+      }
+      toast.success(`Successfully uploaded ${files.length} document(s)`)
+      loadDocuments()
+    } catch (e) { 
+      toast.error("Upload failed") 
     }
-  };
+  }
 
   if (loading) return (
     <DashboardLayout>
