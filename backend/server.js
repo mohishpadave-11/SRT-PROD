@@ -34,8 +34,7 @@ app.use(express.json({ limit: '10mb' }));
 
 // CORS Configuration - Restrict origins based on environment
 const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? [process.env.FRONTEND_URL] // Production: Only allow your frontend domain
-  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173']; // Development: Allow common dev ports
+? [process.env.FRONTEND_URL, "https://srt-dev.vercel.app"]  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173']; // Development: Allow common dev ports
 
 app.use(cors({
   origin: function (origin, callback) {
