@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit2, X, Check, Loader } from 'lucide-react'
+import { Plus, Trash2, Edit2, X, Check } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 // Import Real API
 import { getCompaniesAPI, createCompanyAPI, updateCompanyAPI, deleteCompanyAPI } from '../../services/companyService'
+import Loading from '../../components/ui/Loading';
 
 const CompanyManagement = () => {
   const [companies, setCompanies] = useState([])
@@ -179,9 +180,7 @@ const CompanyManagement = () => {
 
             {/* Loading State */}
             {loading && (
-              <div className="flex justify-center py-12">
-                <Loader className="w-8 h-8 text-blue-500 animate-spin" />
-              </div>
+              <Loading variant="inline" size="md" />
             )}
 
             {/* Companies List */}

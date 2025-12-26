@@ -18,7 +18,7 @@ const CompanyDropdown = ({
   const selectedCompany = companies.find(company => company.name === value)
 
   const handleSelect = (company) => {
-    onChange(company.name)
+    onChange(company.name, company.address)
     setIsOpen(false)
   }
 

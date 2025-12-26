@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Download, Filter, ChevronDown, ChevronUp, Loader } from 'lucide-react'
+import { Download, Filter, ChevronDown, ChevronUp } from 'lucide-react'
 import { useNavigate, useLocation } from "react-router-dom"
 import * as XLSX from 'xlsx';
 import toast, { Toaster } from 'react-hot-toast';
@@ -8,6 +8,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import JobsTable from '../../components/documentdashboardcomponents/JobsTable'
 // Import the API function
 import { getJobsAPI, deleteJobAPI } from '../../services/jobService'
+import Loading from '../../components/ui/Loading';
 
 const JobsDashboard = () => {
   const navigate = useNavigate()
@@ -234,9 +235,7 @@ const JobsDashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex h-screen items-center justify-center">
-          <Loader className="w-8 h-8 animate-spin text-blue-600" />
-        </div>
+        <Loading variant="page" size="md" />
       </DashboardLayout>
     )
   }

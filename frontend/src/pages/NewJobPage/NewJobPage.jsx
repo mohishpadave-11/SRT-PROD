@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Ship, Plane, FileText, Users, Package, Anchor, Save, AlertCircle, Loader } from 'lucide-react';
+import { Ship, Plane, FileText, Users, Package, Anchor, Save, AlertCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast'; // ✅ Import Toast
 
 // --- API Services ---
@@ -13,6 +13,8 @@ import {
 
 // --- 3. Import Company Service ---
 import { createCompanyAPI } from '../../services/companyService';
+
+import Loading from '../../components/ui/Loading';
 
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import CompanyDropdown from '../../components/form/CompanyDropdown';
@@ -221,10 +223,7 @@ const NewJobPage = () => {
 
       {loading ? (
         <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-center">
-            <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600">Loading job data...</p>
-          </div>
+          <Loading variant="page" size="lg" text="Loading job data..." />
         </div>
       ) : (
       <div className="max-w-screen-2xl mx-auto text-slate-700">
@@ -646,10 +645,7 @@ const NewJobPage = () => {
             }`}
           >
             {loading ? (
-              <>
-                <Loader className="w-4 h-4 animate-spin" />
-                <span>{isEditMode ? 'Updating...' : 'Creating Job & Uploading...'}</span>
-              </>
+              <Loading variant="button" size="sm" text={isEditMode ? 'Updating...' : 'Creating Job & Uploading...'} />
             ) : (
               <>
                 <Save className="w-4 h-4" />

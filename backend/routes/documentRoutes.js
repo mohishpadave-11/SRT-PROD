@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { protect } = require('../middleware/authMiddleware');
-const { fileUploadRateLimit } = require('../middleware/rateLimiting');
 const { validateFile } = require('../utils/fileSanitization');
 const { 
   uploadDocument, 
@@ -64,7 +63,6 @@ const upload = multer({
 // Routes with enhanced security
 router.post('/upload', 
   protect, 
-  fileUploadRateLimit, 
   upload.single('file'), 
   fileValidationMiddleware, 
   uploadDocument

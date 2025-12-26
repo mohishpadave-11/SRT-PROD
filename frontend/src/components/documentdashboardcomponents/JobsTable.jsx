@@ -1,6 +1,6 @@
 import { Eye, Edit, Trash2 } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast' // ✅ Import Toast
-import useDocumentActions from '../../hooks/useDocumentActions';
+import useJobActions from '../../hooks/useJobActions.jsx';
 
 const JobsTable = ({
   jobs,
@@ -10,8 +10,8 @@ const JobsTable = ({
   onNavigate,
   onDelete
 }) => {
-  // Use document actions hook for delete confirmation
-  const { handleDelete } = useDocumentActions();
+  // Use job actions hook for delete confirmation
+  const { handleDeleteJob } = useJobActions();
 
   const handleRowClick = (jobId) => {
     onNavigate(`/jobs/${jobId}`)
@@ -29,7 +29,7 @@ const JobsTable = ({
 
   const handleDeleteClick = (e, job) => {
     e.stopPropagation();
-    handleDelete(job.id, `Job ${job.job_number}`, () => {
+    handleDeleteJob(job.id, `Job ${job.job_number}`, () => {
       onDelete(job.id);
     });
   };

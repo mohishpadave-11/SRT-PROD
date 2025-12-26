@@ -1,6 +1,6 @@
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Ship, Plane, FileText, Users, Package, Anchor, AlertCircle, Save, X as XIcon, Loader, Trash2, Share2, Mail, MessageCircle, FileDown, Link as LinkIcon } from 'lucide-react';
+import { Ship, Plane, FileText, Users, Package, Anchor, AlertCircle, Save, X as XIcon, Trash2, Share2, Mail, MessageCircle, FileDown, Link as LinkIcon } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast'; // ✅ Import Toast Library
 
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -11,6 +11,7 @@ import FormSelect from '../../components/form/FormSelect';
 import JobFormSection from '../../components/form/JobFormSection';
 import useJobForm from '../../hooks/useJobForm';
 import useDocumentActions from '../../hooks/useDocumentActions';
+import Loading from '../../components/ui/Loading';
 
 // --- API Services ---
 import { updateJobAPI } from '../../services/jobService';
@@ -243,9 +244,7 @@ const JobDetailsPage = () => {
 
   if (loading) return (
     <DashboardLayout>
-      <div className="flex justify-center items-center h-screen">
-        <Loader className="w-12 h-12 animate-spin text-blue-600" />
-      </div>
+      <Loading variant="page" size="lg" />
     </DashboardLayout>
   );
 
@@ -758,7 +757,7 @@ const JobDetailsPage = () => {
                 <div className={activeTab === 'documents' ? 'block' : 'hidden'}>
                   <div className="-m-4 sm:-m-6 md:-m-8 p-4 sm:p-6 md:p-8">
                     {loadingDocs ? (
-                        <div className="text-center py-10 text-gray-500">Loading documents...</div>
+                        <Loading variant="inline" size="md" text="Loading documents..." />
                     ) : (
                         <DocumentExplorer
                           documents={documents}

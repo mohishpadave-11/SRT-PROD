@@ -1,6 +1,6 @@
 import { FileText, Trash2, Download, X, Share2, MessageCircle, Mail } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-import LoadingSpinner from '../LoadingSpinner'
+import Loading from '../ui/Loading';
 
 // Mac Finder Folder Icon Component - Exact Match
 const MacFinderFolder = ({ className = "w-16 h-16" }) => (
@@ -76,10 +76,7 @@ const DocumentGrid = ({
   }, [activeSharePopup])
   if (isLoading) {
     return (
-      <div className="flex flex-col justify-center items-center py-12 sm:py-20">
-        <LoadingSpinner />
-        <p className="text-gray-500 mt-3 sm:mt-4 text-sm sm:text-base">Loading your documents...</p>
-      </div>
+      <Loading variant="inline" size="md" text="Loading your documents..." />
     )
   }
 

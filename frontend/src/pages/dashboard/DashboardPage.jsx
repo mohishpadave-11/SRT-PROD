@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { MoreVertical, Loader } from 'lucide-react'
+import { MoreVertical } from 'lucide-react'
 
 // --- Components ---
 import StatsCard from '../../dashboardcomponents/components/StatsCard'
@@ -8,6 +8,7 @@ import JobMapping from '../../dashboardcomponents/components/JobMapping'
 import JobsCreated from '../../dashboardcomponents/components/JobsCreated'
 import Top5Parties from '../../dashboardcomponents/components/Top5Parties'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import Loading from '../../components/ui/Loading';
 
 // --- Services & Utils ---
 import { getJobsAPI } from '../../services/jobService'
@@ -107,9 +108,7 @@ const DashboardPage = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex h-[80vh] items-center justify-center">
-          <Loader className="w-12 h-12 text-blue-600 animate-spin" />
-        </div>
+        <Loading variant="page" size="lg" />
       </DashboardLayout>
     )
   }

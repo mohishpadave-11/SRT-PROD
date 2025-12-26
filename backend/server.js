@@ -12,9 +12,6 @@ const documentRoutes = require('./routes/documentRoutes'); // 👈 1. Import Doc
 // Import Error Handler
 const errorHandler = require('./middleware/errorHandler');
 
-// Import Rate Limiting
-const { generalRateLimit } = require('./middleware/rateLimiting');
-
 require('dotenv').config();
 
 const app = express();
@@ -31,9 +28,6 @@ app.use(helmet({
     },
   },
 }));
-
-// Rate Limiting - Apply to all requests
-app.use(generalRateLimit);
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
