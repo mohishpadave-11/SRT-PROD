@@ -187,7 +187,7 @@ const NewJobPage = () => {
 
         if (isEditMode) {
           await updateJobAPI(id, backendPayload);
-          navigate("/jobs-dashboard", { state: { message: "Job updated successfully!" } });
+          navigate("/jobs-dashboard", { state: { message: "Job updated successfully!", refresh: true } });
         } else {
           const newJob = await createJobAPI(backendPayload);
           const newJobId = newJob.id || newJob.data?.id;
@@ -202,7 +202,7 @@ const NewJobPage = () => {
             }
           }
 
-          navigate("/jobs-dashboard", { state: { message: "Job created successfully!" } });
+          navigate("/jobs-dashboard", { state: { message: "Job created successfully!", refresh: true } });
         }
 
     } catch (err) {

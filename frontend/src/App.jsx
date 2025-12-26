@@ -44,16 +44,16 @@ function App() {
             element={isLoggedIn ? <JobsDashboard /> : <Navigate to="/login" />} 
           />
 
-          {/* JOB DETAILS ROUTE */}
-          <Route 
-            path="/jobs/:id" 
-            element={isLoggedIn ? <JobDetailsPage /> : <Navigate to="/login" />} 
-          />
-
           {/* NEW JOB ROUTE */}
           <Route 
             path="/jobs/new" 
             element={isLoggedIn ? <NewJobPage /> : <Navigate to="/login" />} 
+          />
+
+          {/* JOB DETAILS ROUTE */}
+          <Route 
+            path="/jobs/:id" 
+            element={isLoggedIn ? <JobDetailsPage /> : <Navigate to="/login" />} 
           />
           
           {/* EDIT JOB ROUTE */}

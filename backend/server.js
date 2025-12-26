@@ -70,9 +70,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3001;
 
 // Connect to DB and start server
-// 👇 3. RESET DB ONCE to create the new Documents table
-// ⚠️ WARNING: This wipes your data! Change back to { alter: true } after you run this successfully once.
-sequelize.sync({ alter: true })
+sequelize.sync({ alter: false })
   .then(() => {
     console.log('✅ Database connected & Tables Created');
     app.listen(PORT, () => {

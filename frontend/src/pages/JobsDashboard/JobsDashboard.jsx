@@ -25,6 +25,13 @@ const JobsDashboard = () => {
     }
   }, [location.state?.message])
 
+  // Refresh jobs when returning from job creation/edit
+  useEffect(() => {
+    if (location.state?.refresh) {
+      fetchJobs()
+    }
+  }, [location.state?.refresh])
+
   // State for data
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -48,30 +55,30 @@ const JobsDashboard = () => {
   const [activeFilters, setActiveFilters] = useState(null)
 
   // Fetch Jobs on Mount and when component becomes visible
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        setLoading(true)
-        console.log('🔍 Fetching jobs...')
-        const data = await getJobsAPI()
+  const fetchJobs = async () => {
+    try {
+      setLoading(true)
+      console.log('🔍 Fetching jobs...')
+      const data = await getJobsAPI()
 
-        // Safety Check: Ensure data is an array before setting state
-        if (Array.isArray(data)) {
-          console.log('📊 Jobs data received:', data.length)
-          setJobs(data)
-        } else {
-          console.warn('⚠️ API returned non-array data:', data)
-          setJobs([])
-        }
-        setError(null)
-      } catch (err) {
-        console.error("Failed to fetch jobs:", err)
-        setError("Failed to load jobs. Check your connection or login again.")
-      } finally {
-        setLoading(false)
+      // Safety Check: Ensure data is an array before setting state
+      if (Array.isArray(data)) {
+        console.log('📊 Jobs data received:', data.length)
+        setJobs(data)
+      } else {
+        console.warn('⚠️ API returned non-array data:', data)
+        setJobs([])
       }
+      setError(null)
+    } catch (err) {
+      console.error("Failed to fetch jobs:", err)
+      setError("Failed to load jobs. Check your connection or login again.")
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchJobs()
 
     // Also fetch when page becomes visible (user navigates back)
@@ -164,14 +171,17 @@ const JobsDashboard = () => {
 
   const handleDeleteJob = async (jobId) => {
     try {
-      await deleteJobAPI(jobId)
-      // Remove job from local state
-      setJobs(jobs.filter(job => job.id !== jobId))
-      // Also remove from selected jobs if it was selected
-      setSelectedJobs(selectedJobs.filter(id => id !== jobId))
+      console.log('Attempting to delete job:', jobId);
+      const response = await deleteJobAPI(jobId);
+      console.log('Delete response:', response);
+      
+      // Only remove from local state if backend deletion was successful
+      setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+      setSelectedJobs(prevSelected => prevSelected.filter(id => id !== jobId));
     } catch (err) {
-      console.error("Failed to delete job:", err)
-      alert("Failed to delete job. Please try again.")
+      console.error("Failed to delete job:", err);
+      // Don't remove from local state if deletion failed
+      alert("Failed to delete job. Please try again.");
     }
   }
 

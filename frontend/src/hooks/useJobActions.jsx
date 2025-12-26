@@ -28,6 +28,7 @@ const useJobActions = () => {
                 toast.success("Job deleted successfully");
                 if (onSuccess) onSuccess();
               } catch (err) {
+                console.error("Delete job error:", err);
                 toast.error("Failed to delete job");
               }
             }}
