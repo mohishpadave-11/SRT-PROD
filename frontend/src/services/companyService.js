@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Ensure this matches your backend port
-const API_URL = 'http://localhost:3001/api/companies';
+const API_URL = `${import.meta.env.VITE_API_URL}/companies` || 'http://localhost:3001/api/companies';
 
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
