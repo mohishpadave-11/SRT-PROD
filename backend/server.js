@@ -32,26 +32,37 @@ app.use(helmet({
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 
-// CORS Configuration - Restrict origins based on environment
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? [process.env.FRONTEND_URL] // Production: Only allow your frontend domain
-  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173']; // Development: Allow common dev ports
+// -------------------------------------------------------------------------
+// ✅ CORS FIX: Allow all necessary origins (Dev, Prod, Localhost)
+// This list works in BOTH Production and Development modes automatically.
+// -------------------------------------------------------------------------
+const allowedOrigins = [
+  process.env.FRONTEND_URL,                // Render Environment Variable
+  "https://srt-dev.vercel.app",            // 👈 Explicitly allow your DEV Frontend
+  "https://srt-prod.vercel.app",           // Explicitly allow Production
+  "http://localhost:5173",                 // Allow Localhost (Vite)
+  "http://localhost:3000",                 // Allow Localhost (React/Node)
+  "http://127.0.0.1:5173"                  // Allow Local IP
+].filter(Boolean); // Removes empty values if a variable is missing
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps, curl, or Postman)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // 🔍 Log the blocked origin so you can see it in Render Logs if it fails
+      console.log("🚫 Blocked by CORS:", origin);
+      callback(new Error(`CORS Error: Origin ${origin} not allowed`));
     }
   },
-  credentials: true,
+  credentials: true, // Allow cookies/headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+// -------------------------------------------------------------------------
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -70,6 +81,8 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3001;
 
 // Connect to DB and start server
+// 👇 3. RESET DB ONCE to create the new Documents table
+// ⚠️ WARNING: This wipes your data! Change back to { alter: true } after you run this successfully once.
 sequelize.sync({ alter: false })
   .then(() => {
     console.log('✅ Database connected & Tables Created');
