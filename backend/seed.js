@@ -7,7 +7,7 @@ const seedDatabase = async () => {
     console.log('✅ Connected to Database');
 
     // 1. Define the Super Admin details
-    const adminEmail = 'admin@example.com';
+    const adminEmail = 'mohish.padave@gmail.com';
     const adminRole = 'admin'; // <--- CHECK THIS: Change to 'SuperAdmin' or 'Manager' if your app uses different names
 
     // 2. Check if user already exists

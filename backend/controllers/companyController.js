@@ -1,5 +1,6 @@
 const { Company } = require('../models');
 const { Op } = require('sequelize'); 
+const { sendSuccess, sendError } = require('../utils/responseHelper'); 
 
 // @desc    Add a New Company
 // @route   POST /api/companies
@@ -7,32 +8,47 @@ exports.createCompany = async (req, res) => {
   try {
     const { name, address, type } = req.body;
     
+    // Production-grade name validation
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return sendError(res, 'Company name is required and cannot be empty', 400);
+    }
+    
+    // Sanitize name by trimming whitespace
+    const sanitizedName = name.trim();
+    
+    // Additional validation for name length and characters
+    if (sanitizedName.length < 2) {
+      return sendError(res, 'Company name must be at least 2 characters long', 400);
+    }
+    
+    if (sanitizedName.length > 100) {
+      return sendError(res, 'Company name cannot exceed 100 characters', 400);
+    }
+    
     const companyType = type || 'Both';
 
-    // Check for duplicates by name only (since we now have one list)
+    // Check for duplicates by name only (using sanitized name)
     const exists = await Company.findOne({ 
       where: { 
-        name: name
+        name: sanitizedName
       } 
     });
 
     if (exists) {
-      return res.status(400).json({ 
-        message: `Company '${name}' already exists.` 
-      });
+      return sendError(res, `Company '${sanitizedName}' already exists`, 400);
     }
 
     const company = await Company.create({
-      name,
+      name: sanitizedName,
       address,
       type: companyType,
       createdBy: req.user.id
     });
 
-    res.status(201).json({ success: true, data: company });
+    return sendSuccess(res, 'Company created successfully', company, 201);
   } catch (error) {
     console.error("Error creating company:", error); 
-    res.status(500).json({ message: 'Server Error: Could not create company' });
+    return sendError(res, 'Could not create company', 500);
   }
 };
 
@@ -42,28 +58,45 @@ exports.getCompanies = async (req, res) => {
   try {
     const { type } = req.query;
     
-    // Debug log to confirm what the frontend is asking for
-    // console.log(`🔍 API HIT: Searching for companies with type: '${type}'`); 
-
     let whereClause = {};
 
-    // Filter Logic:
-    // If frontend asks for 'Exporter' or 'Consignee', we return 'Both' type companies
+    // Production-grade filtering logic
     if (type) {
-      whereClause = {
-        type: 'Both'
-      };
+      // Validate type parameter
+      const validTypes = ['Exporter', 'Consignee', 'Both'];
+      if (!validTypes.includes(type)) {
+        return sendError(res, `Invalid company type. Must be one of: ${validTypes.join(', ')}`, 400);
+      }
+
+      // Smart filtering logic:
+      // - If requesting 'Exporter': return companies that are 'Exporter' OR 'Both'
+      // - If requesting 'Consignee': return companies that are 'Consignee' OR 'Both'  
+      // - If requesting 'Both': return only companies that are 'Both'
+      if (type === 'Exporter') {
+        whereClause = {
+          type: { [Op.in]: ['Exporter', 'Both'] }
+        };
+      } else if (type === 'Consignee') {
+        whereClause = {
+          type: { [Op.in]: ['Consignee', 'Both'] }
+        };
+      } else if (type === 'Both') {
+        whereClause = {
+          type: 'Both'
+        };
+      }
     }
+    // If no type specified, return all companies
 
     const companies = await Company.findAll({
       where: whereClause,
       order: [['name', 'ASC']]
     });
 
-    res.status(200).json({ success: true, data: companies });
+    return sendSuccess(res, 'Companies fetched successfully', companies);
   } catch (error) {
     console.error("❌ DB ERROR:", error); 
-    res.status(500).json({ message: 'Server Error: Could not fetch companies' });
+    return sendError(res, 'Could not fetch companies', 500);
   }
 };
 
@@ -76,13 +109,13 @@ exports.updateCompany = async (req, res) => {
     
     if (updated) {
       const updatedCompany = await Company.findOne({ where: { id } });
-      return res.status(200).json({ success: true, data: updatedCompany });
+      return sendSuccess(res, 'Company updated successfully', updatedCompany);
     }
     
-    res.status(404).json({ message: 'Company not found' });
+    return sendError(res, 'Company not found', 404);
   } catch (error) {
     console.error("Error updating company:", error);
-    res.status(500).json({ message: error.message });
+    return sendError(res, 'Could not update company', 500);
   }
 };
 
@@ -91,10 +124,15 @@ exports.updateCompany = async (req, res) => {
 exports.deleteCompany = async (req, res) => {
   try {
     const { id } = req.params;
-    await Company.destroy({ where: { id } });
-    res.status(200).json({ success: true, message: 'Deleted successfully' });
+    const deleted = await Company.destroy({ where: { id } });
+    
+    if (deleted) {
+      return sendSuccess(res, 'Company deleted successfully', null);
+    }
+    
+    return sendError(res, 'Company not found', 404);
   } catch (error) {
     console.error("Error deleting company:", error);
-    res.status(500).json({ message: error.message });
+    return sendError(res, 'Could not delete company', 500);
   }
 };

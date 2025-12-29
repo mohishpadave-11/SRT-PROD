@@ -143,6 +143,7 @@ const JobDetailsPage = () => {
     documents,
     setDocuments,
     companies,
+    setCompanies,
     loadDocuments
   } = useJobForm(id, true);
 
@@ -231,15 +232,40 @@ const JobDetailsPage = () => {
   };
 
   const handleFileUpload = async (files, documentType) => {
-    if (!id) return
-    try {
-      for (let i = 0; i < files.length; i++) {
-        await uploadDocumentAPI(id, documentType, files[i])
+    if (!id) return;
+    
+    const results = {
+      successful: [],
+      failed: []
+    };
+    
+    // Process each file individually to prevent crashes
+    for (let i = 0; i < files.length; i++) {
+      try {
+        await uploadDocumentAPI(id, documentType, files[i]);
+        results.successful.push(files[i].name);
+      } catch (error) {
+        console.error(`Upload failed for file ${files[i].name}:`, error);
+        results.failed.push({
+          name: files[i].name,
+          error: error.message || 'Upload failed'
+        });
       }
-      toast.success(`Successfully uploaded ${files.length} document(s)`)
-      loadDocuments()
-    } catch (e) { 
-      toast.error("Upload failed") 
+    }
+    
+    // Provide detailed feedback based on results
+    if (results.successful.length > 0 && results.failed.length === 0) {
+      toast.success(`Successfully uploaded ${results.successful.length} document(s)`);
+    } else if (results.successful.length > 0 && results.failed.length > 0) {
+      toast.success(`Uploaded ${results.successful.length} document(s)`);
+      toast.error(`Failed to upload ${results.failed.length} document(s)`);
+    } else if (results.failed.length > 0) {
+      toast.error(`Failed to upload ${results.failed.length} document(s)`);
+    }
+    
+    // Reload documents if any uploads were successful
+    if (results.successful.length > 0) {
+      loadDocuments();
     }
   }
 

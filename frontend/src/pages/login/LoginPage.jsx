@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PropTypes from 'prop-types'
-import { Ship, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import logo from '../../assets/srtship-logo.png'
 import { loginAPI } from '../../services/authService' // IMPORT THIS
 import { useAuth } from '../../store/AuthContext';
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate()
+  const { login } = useAuth() // Use AuthContext login function
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -48,13 +49,20 @@ const LoginPage = ({ onLogin }) => {
       setIsLoading(true)
       try {
         // --- REAL BACKEND CALL ---
-        await loginAPI(email, password)
+        const response = await loginAPI(email, password)
         
-        // If successful (no error thrown)
-        if (onLogin) {
-          onLogin()
+        // Use AuthContext login function with token validation
+        const loginSuccess = login(response.user, response.token);
+        
+        if (loginSuccess) {
+          // If successful login and token is valid
+          if (onLogin) {
+            onLogin()
+          }
+          navigate('/dashboard')
+        } else {
+          setLoginError('Login failed: Invalid token received')
         }
-        navigate('/dashboard')
         // -------------------------
 
       } catch (error) {

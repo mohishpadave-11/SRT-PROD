@@ -1,41 +1,30 @@
-// Use environment variable for API URL, fallback to localhost for development
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://srt-prod-tf0o.onrender.com/api' ;
-// || 'http://localhost:3001/api'
+import axiosClient from '../api/axiosClient.js';
 
 export const getDashboardData = async (year, month) => {
-  // Direct fetch without mock fallback
-  const response = await fetch(`${API_BASE_URL}/dashboard/data?year=${year}&month=${month}`)
-  
-  if (!response.ok) {
-    // This error will now bubble up to the component
-    throw new Error(`Failed to fetch dashboard data: ${response.statusText}`)
+  try {
+    const response = await axiosClient.get(`/dashboard/data?year=${year}&month=${month}`);
+    return response;
+  } catch (error) {
+    throw new Error(`Failed to fetch dashboard data: ${error.message}`);
   }
-  
-  const data = await response.json()
-  return data
-}
+};
 
 export const getDocuments = async (filters = {}) => {
-  // Construct query parameters
-  const queryParams = new URLSearchParams(filters).toString()
-  
-  const response = await fetch(`${API_BASE_URL}/documents?${queryParams}`)
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch documents: ${response.statusText}`)
+  try {
+    // Construct query parameters
+    const queryParams = new URLSearchParams(filters).toString();
+    const response = await axiosClient.get(`/documents?${queryParams}`);
+    return response;
+  } catch (error) {
+    throw new Error(`Failed to fetch documents: ${error.message}`);
   }
-  
-  const data = await response.json()
-  return data
-}
+};
 
 export const getDocumentById = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/documents/${id}`)
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch document: ${response.statusText}`)
+  try {
+    const response = await axiosClient.get(`/documents/${id}`);
+    return response;
+  } catch (error) {
+    throw new Error(`Failed to fetch document: ${error.message}`);
   }
-  
-  const data = await response.json()
-  return data
-}
+};

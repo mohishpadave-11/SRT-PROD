@@ -2,9 +2,9 @@ const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aw
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { Document, Job } = require('../models');
 const r2Client = require('../config/r2');
-const { generateSecureFilename, sanitizeTextInput } = require('../utils/fileSanitization');
+const { sanitizeTextInput } = require('../utils/fileSanitization');
 const { NotFoundError, ValidationError } = require('../utils/customErrors');
-const path = require('path');
+const { sendSuccess, sendError } = require('../utils/responseHelper');
 
 // Helper: Clean filename for R2 (e.g. "Commercial Invoice" -> "commercial_invoice")
 const sanitizeDocType = (type) => {
@@ -79,11 +79,7 @@ exports.uploadDocument = async (req, res, next) => {
       });
     }
 
-    res.status(200).json({ 
-      success: true, 
-      data: doc,
-      message: 'File uploaded successfully'
-    });
+    return sendSuccess(res, 'Document uploaded successfully', doc);
 
   } catch (error) {
     next(error);
@@ -106,7 +102,7 @@ exports.getJobDocuments = async (req, res, next) => {
       order: [['createdAt', 'DESC']]
     });
     
-    res.status(200).json({ success: true, data: docs });
+    return sendSuccess(res, 'Documents fetched successfully', docs);
   } catch (error) {
     next(error);
   }
@@ -114,16 +110,18 @@ exports.getJobDocuments = async (req, res, next) => {
 
 // @desc    Generate Secure View/Download Link
 // @route   GET /api/documents/download/:id
-exports.downloadDocument = async (req, res) => {
+exports.downloadDocument = async (req, res, next) => {
   try {
     const doc = await Document.findByPk(req.params.id);
-    if (!doc) return res.status(404).json({ message: 'Document not found' });
+    if (!doc) {
+      return sendError(res, 'Document not found', 404);
+    }
 
     // Security: Verify user has access to this document's job
     // This prevents users from accessing documents from jobs they don't own
     const job = await Job.findByPk(doc.job_id);
     if (!job) {
-      return res.status(404).json({ message: 'Associated job not found' });
+      return sendError(res, 'Associated job not found', 404);
     }
 
     // Validate disposition parameter (whitelist approach for security)
@@ -158,20 +156,22 @@ exports.downloadDocument = async (req, res) => {
     // Log successful download request for audit purposes
     console.log(`Document access: User ${req.user.id} requested ${dispositionType} for document ${doc.id} (${doc.original_name})`);
 
-    res.status(200).json({ success: true, downloadUrl: url });
+    return sendSuccess(res, 'Download link generated successfully', { downloadUrl: url });
 
   } catch (error) {
     console.error("Download Error:", error);
-    res.status(500).json({ message: 'Could not generate document link' });
+    return sendError(res, 'Could not generate document link', 500);
   }
 };
 
 // @desc    Delete Document
 // @route   DELETE /api/documents/:id
-exports.deleteDocument = async (req, res) => {
+exports.deleteDocument = async (req, res, next) => {
   try {
     const doc = await Document.findByPk(req.params.id);
-    if (!doc) return res.status(404).json({ message: 'Document not found' });
+    if (!doc) {
+      return sendError(res, 'Document not found', 404);
+    }
 
     // 1. Delete from R2
     await r2Client.send(new DeleteObjectCommand({
@@ -182,10 +182,10 @@ exports.deleteDocument = async (req, res) => {
     // 2. Delete from DB
     await doc.destroy();
 
-    res.status(200).json({ success: true, message: 'Document deleted' });
+    return sendSuccess(res, 'Document deleted successfully', null);
 
   } catch (error) {
     console.error("Delete Error:", error);
-    res.status(500).json({ message: 'Delete failed' });
+    return sendError(res, 'Could not delete document', 500);
   }
 };

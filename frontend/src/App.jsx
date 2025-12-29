@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import LoginPage from './pages/login/LoginPage'
 import ForgotPasswordPage from './pages/login/ForgotPasswordPage'
+import ResetPasswordPage from './pages/login/ResetPasswordPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import JobsDashboard from './pages/JobsDashboard/JobsDashboard'
 import JobDetailsPage from "./pages/JobsDashboard/JobDetailsPage"
@@ -10,20 +11,35 @@ import NewJobPage from './pages/NewJobPage/NewJobPage'
 import AdminProfilePage from './pages/admin/AdminProfilePage'
 import CompanyManagement from './pages/admin/CompanyManagement'
 import DocumentDashboard from './pages/DocumentDashboard/DocumentDashboard'
+import { useAuth } from './store/AuthContext'
+import { isTokenExpired } from './utils/tokenUtils'
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return !!localStorage.getItem('token')
-  })
+// Protected Route Component with Token Validation
+function ProtectedRoute({ children }) {
+  const { token, logout } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    setIsLoggedIn(!!token)
-  }, [])
+    // Validate token on route change
+    if (token && isTokenExpired(token)) {
+      console.info('Token expired on route change, logging out');
+      logout();
+    }
+  }, [location.pathname, token, logout]);
+
+  const isLoggedIn = !!token && !isTokenExpired(token);
+  
+  return isLoggedIn ? children : <Navigate to="/login" />;
+}
+
+function App() {
+  const { user, token, login, logout } = useAuth();
+  const isLoggedIn = !!token && !isTokenExpired(token);
 
   const handleLogin = () => {
-    setIsLoggedIn(true)
-  }
+    // This function is called after successful login
+    // The actual login state is managed by AuthContext
+  };
 
   return (
     <ErrorBoundary fallbackMessage="The application encountered an error. Please refresh the page.">
@@ -32,52 +48,53 @@ function App() {
           {/* AUTH ROUTES */}
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
           {/* PROTECTED ROUTES */}
           <Route 
             path="/dashboard" 
-            element={isLoggedIn ? <DashboardPage /> : <Navigate to="/login" />} 
+            element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} 
           />
 
           <Route 
             path="/jobs-dashboard" 
-            element={isLoggedIn ? <JobsDashboard /> : <Navigate to="/login" />} 
+            element={<ProtectedRoute><JobsDashboard /></ProtectedRoute>} 
           />
 
           {/* NEW JOB ROUTE */}
           <Route 
             path="/jobs/new" 
-            element={isLoggedIn ? <NewJobPage /> : <Navigate to="/login" />} 
+            element={<ProtectedRoute><NewJobPage /></ProtectedRoute>} 
           />
 
           {/* JOB DETAILS ROUTE */}
           <Route 
             path="/jobs/:id" 
-            element={isLoggedIn ? <JobDetailsPage /> : <Navigate to="/login" />} 
+            element={<ProtectedRoute><JobDetailsPage /></ProtectedRoute>} 
           />
           
           {/* EDIT JOB ROUTE */}
           <Route 
             path="/jobs/:id/edit" 
-            element={isLoggedIn ? <NewJobPage /> : <Navigate to="/login" />} 
+            element={<ProtectedRoute><NewJobPage /></ProtectedRoute>} 
           />
 
           {/* ADMIN PROFILE ROUTE */}
           <Route 
             path="/admin/profile" 
-            element={isLoggedIn ? <AdminProfilePage /> : <Navigate to="/login" />} 
+            element={<ProtectedRoute><AdminProfilePage /></ProtectedRoute>} 
           />
 
           {/* COMPANY MANAGEMENT ROUTE */}
           <Route 
             path="/admin/companies" 
-            element={isLoggedIn ? <CompanyManagement /> : <Navigate to="/login" />} 
+            element={<ProtectedRoute><CompanyManagement /></ProtectedRoute>} 
           />
 
           {/* DOCUMENT DASHBOARD ROUTE */}
           <Route 
             path="/document-dashboard" 
-            element={isLoggedIn ? <DocumentDashboard /> : <Navigate to="/login" />} 
+            element={<ProtectedRoute><DocumentDashboard /></ProtectedRoute>} 
           />
 
           {/* DEFAULT REDIRECT */}

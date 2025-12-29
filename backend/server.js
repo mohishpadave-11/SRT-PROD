@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const documentRoutes = require('./routes/documentRoutes'); // 👈 1. Import Document Routes
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 // Import Error Handler
 const errorHandler = require('./middleware/errorHandler');
@@ -69,6 +70,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/documents', documentRoutes); // 👈 2. Use Document Routes
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health Check
 app.get('/', (req, res) => {
@@ -78,14 +80,15 @@ app.get('/', (req, res) => {
 // Error Handler Middleware (must be last)
 app.use(errorHandler);
 
+// ... (rest of your code above stays the same)
+
 const PORT = process.env.PORT || 3001;
 
 // Connect to DB and start server
-// 👇 3. RESET DB ONCE to create the new Documents table
-// ⚠️ WARNING: This wipes your data! Change back to { alter: true } after you run this successfully once.
-sequelize.sync({ alter: false })
+// 👇 CHANGED: Switched to sync({ alter: true }) to add the missing columns
+sequelize.sync() 
   .then(() => {
-    console.log('✅ Database connected & Tables Created');
+    console.log('✅ Database connected & Tables Updated');
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });

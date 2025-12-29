@@ -60,6 +60,7 @@ const useJobForm = (jobId = null, isEditMode = false) => {
         setCompanies(data);
       } catch (err) {
         console.error("Failed to load companies:", err);
+        setCompanies([]); // Fallback to empty array to prevent crashes
       }
     };
     loadCompanies();

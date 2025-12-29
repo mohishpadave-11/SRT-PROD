@@ -1,25 +1,11 @@
-import axios from 'axios';
+import axiosClient from '../api/axiosClient.js';
 import { handleError } from '../utils/errorHandler';
-
-// Point to your Backend Job Route
-const API_URL = `${import.meta.env.VITE_API_URL}/jobs` || 'http://localhost:3001/api/jobs';
-
-// Helper function to get the token from localStorage
-const getAuthConfig = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`, // Attach the token so the backend knows who you are
-      'Content-Type': 'application/json',
-    },
-  };
-};
 
 // 1. Create a Job
 export const createJobAPI = async (jobData) => {
   try {
-    const response = await axios.post(API_URL, jobData, getAuthConfig());
-    return response.data;
+    const response = await axiosClient.post('/jobs', jobData);
+    return response;
   } catch (error) {
     // Use centralized error handling
     const parsedError = handleError(error, { showToast: false });
@@ -30,9 +16,8 @@ export const createJobAPI = async (jobData) => {
 // 2. Get All Jobs (We will use this later for the Dashboard)
 export const getJobsAPI = async () => {
   try {
-    const response = await axios.get(API_URL, getAuthConfig());
-    // Assuming backend returns { success: true, data: [...] } or just the array
-    return response.data.data || response.data; 
+    const response = await axiosClient.get('/jobs');
+    return response; 
   } catch (error) {
     const parsedError = handleError(error, { showToast: false });
     throw parsedError;
@@ -42,8 +27,8 @@ export const getJobsAPI = async () => {
 // 2.1. Get Single Job by ID
 export const getJobByIdAPI = async (jobId) => {
   try {
-    const response = await axios.get(`${API_URL}/${jobId}`, getAuthConfig());
-    return response.data.data || response.data;
+    const response = await axiosClient.get(`/jobs/${jobId}`);
+    return response;
   } catch (error) {
     const parsedError = handleError(error, { showToast: false });
     throw parsedError;
@@ -53,8 +38,8 @@ export const getJobByIdAPI = async (jobId) => {
 // 3. Update a Job
 export const updateJobAPI = async (jobId, jobData) => {
   try {
-    const response = await axios.put(`${API_URL}/${jobId}`, jobData, getAuthConfig());
-    return response.data;
+    const response = await axiosClient.put(`/jobs/${jobId}`, jobData);
+    return response;
   } catch (error) {
     const parsedError = handleError(error, { showToast: false });
     throw parsedError;
@@ -64,8 +49,8 @@ export const updateJobAPI = async (jobId, jobData) => {
 // 4. Delete a Job
 export const deleteJobAPI = async (jobId) => {
   try {
-    const response = await axios.delete(`${API_URL}/${jobId}`, getAuthConfig());
-    return response.data;
+    const response = await axiosClient.delete(`/jobs/${jobId}`);
+    return response;
   } catch (error) {
     const parsedError = handleError(error, { showToast: false });
     throw parsedError;

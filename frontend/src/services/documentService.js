@@ -1,15 +1,4 @@
-import axios from 'axios';
-
-const API_URL = `${import.meta.env.VITE_API_URL}/documents` || 'http://localhost:3001/api/documents';
-
-const getAuthConfig = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
-};
+import axiosClient from '../api/axiosClient.js';
 
 // 1. Upload Document
 export const uploadDocumentAPI = async (jobId, docType, file) => {
@@ -19,8 +8,12 @@ export const uploadDocumentAPI = async (jobId, docType, file) => {
   formData.append('file', file);
 
   try {
-    const response = await axios.post(`${API_URL}/upload`, formData, getAuthConfig());
-    return response.data;
+    const response = await axiosClient.post('/documents/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response;
   } catch (error) {
     console.error("Upload Error:", error);
     throw error.response?.data?.message || 'Upload failed';
@@ -30,11 +23,11 @@ export const uploadDocumentAPI = async (jobId, docType, file) => {
 // 2. Get Documents for a specific Job
 export const getJobDocumentsAPI = async (jobId) => {
   try {
-    const response = await axios.get(`${API_URL}/${jobId}`, getAuthConfig());
-    return response.data.data;
+    const response = await axiosClient.get(`/documents/${jobId}`);
+    return response;
   } catch (error) {
     console.error("Fetch Docs Error:", error);
-    throw error.response?.data?.message || 'Failed to fetch documents';
+    throw error;
   }
 };
 
@@ -46,33 +39,29 @@ export const downloadDocumentAPI = async (docId, disposition = 'attachment') => 
       throw new Error('Invalid disposition parameter');
     }
 
-    const response = await axios.get(
-      `${API_URL}/download/${docId}?disposition=${disposition}`, 
-      getAuthConfig()
+    const response = await axiosClient.get(
+      `/documents/download/${docId}?disposition=${disposition}`
     );
 
-    if (!response.data || !response.data.downloadUrl) {
+    if (!response || !response.downloadUrl) {
       throw new Error('Invalid response from server');
     }
 
-    return response.data.downloadUrl;
+    return response.downloadUrl;
   } catch (error) {
     console.error("Download Error:", error);
-    if (error.response?.status === 404) throw new Error('Document not found');
-    if (error.response?.status === 401) throw new Error('Authentication required');
-    if (error.response?.status === 403) throw new Error('Access denied');
-    throw error.response?.data?.message || 'Download failed. Please try again.';
+    throw error;
   }
 };
 
 // 4. Delete Document
 export const deleteDocumentAPI = async (docId) => {
   try {
-    const response = await axios.delete(`${API_URL}/${docId}`, getAuthConfig());
-    return response.data;
+    const response = await axiosClient.delete(`/documents/${docId}`);
+    return response;
   } catch (error) {
     console.error("Delete Error:", error);
-    throw error.response?.data?.message || 'Delete failed';
+    throw error;
   }
 };
 

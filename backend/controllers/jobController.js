@@ -1,6 +1,7 @@
 const { Job, User } = require('../models');
 const { ValidationError, NotFoundError, ConflictError } = require('../utils/customErrors');
 const { sanitizeTextInput } = require('../utils/fileSanitization');
+const { sendSuccess, sendError } = require('../utils/responseHelper');
 
 // @desc    Create a new Job
 // @route   POST /api/jobs
@@ -114,10 +115,7 @@ exports.createJob = async (req, res, next) => {
       createdBy: req.user.id // Grabs ID from the authenticated user middleware
     });
 
-    res.status(201).json({
-      success: true,
-      data: job
-    });
+    return sendSuccess(res, 'Job created successfully', job, 201);
 
   } catch (error) {
     next(error);
@@ -137,11 +135,7 @@ exports.getJobs = async (req, res, next) => {
       order: [['createdAt', 'DESC']] // Newest jobs first
     });
 
-    res.status(200).json({
-      success: true,
-      count: jobs.length,
-      data: jobs
-    });
+    return sendSuccess(res, 'Jobs fetched successfully', jobs);
   } catch (error) {
     next(error);
   }
@@ -165,10 +159,7 @@ exports.getJobById = async (req, res, next) => {
       throw new NotFoundError('Job not found');
     }
     
-    res.status(200).json({
-      success: true,
-      data: job
-    });
+    return sendSuccess(res, 'Job fetched successfully', job);
   } catch (error) {
     next(error);
   }
@@ -191,11 +182,7 @@ exports.updateJob = async (req, res, next) => {
     // Using instance.update() is better than Model.update() as it returns the updated object immediately
     const updatedJob = await job.update(req.body);
     
-    res.status(200).json({
-      success: true,
-      data: updatedJob,
-      message: 'Job updated successfully'
-    });
+    return sendSuccess(res, 'Job updated successfully', updatedJob);
   } catch (error) {
     next(error);
   }
@@ -217,10 +204,7 @@ exports.deleteJob = async (req, res, next) => {
     // 2. Destroy the record
     await job.destroy();
     
-    res.status(200).json({
-      success: true,
-      message: 'Job deleted successfully'
-    });
+    return sendSuccess(res, 'Job deleted successfully', null);
   } catch (error) {
     next(error);
   }
