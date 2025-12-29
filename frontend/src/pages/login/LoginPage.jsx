@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { Eye, EyeOff } from 'lucide-react'
 import logo from '../../assets/srtship-logo.png'
 import { loginAPI } from '../../services/authService' // IMPORT THIS
 import { useAuth } from '../../store/AuthContext';
+import { validateEmail } from '../../utils/emailValidation'
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate()
@@ -16,10 +17,6 @@ const LoginPage = ({ onLogin }) => {
   const [loginError, setLoginError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-
-  const validateEmail = (value) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-  }
 
   const validatePassword = (value) => {
     // Backend likely handles complex validation, frontend just checks presence
@@ -49,7 +46,7 @@ const LoginPage = ({ onLogin }) => {
       setIsLoading(true)
       try {
         // --- REAL BACKEND CALL ---
-        const response = await loginAPI(email, password)
+        const response = await loginAPI(email.toLowerCase().trim(), password)
         
         // Use AuthContext login function with token validation
         const loginSuccess = login(response.user, response.token);
@@ -61,26 +58,14 @@ const LoginPage = ({ onLogin }) => {
           }
           navigate('/dashboard')
         } else {
+          console.error('Token validation failed after successful backend login');
           setLoginError('Login failed: Invalid token received')
         }
         // -------------------------
 
       } catch (error) {
-        const errorMsg = error.message || error;
-        setLoginError(errorMsg);
-        
-        // Persistent error logging for debugging
-        console.error('Login Error Details:', {
-          message: errorMsg,
-          timestamp: new Date().toISOString(),
-          email: email,
-          error: error
-        });
-        
-        // Keep error visible longer by preventing auto-clear
-        setTimeout(() => {
-          console.error('Login error persisted:', errorMsg);
-        }, 5000);
+        setLoginError(error) // Display the error message from backend
+        console.error('Login error:', error)
       } finally {
         setIsLoading(false)
       }
@@ -192,6 +177,15 @@ const LoginPage = ({ onLogin }) => {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
+                Create one here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
