@@ -66,8 +66,21 @@ const LoginPage = ({ onLogin }) => {
         // -------------------------
 
       } catch (error) {
-        setLoginError(error) // Display the error message from backend
-        console.error('Login error:', error)
+        const errorMsg = error.message || error;
+        setLoginError(errorMsg);
+        
+        // Persistent error logging for debugging
+        console.error('Login Error Details:', {
+          message: errorMsg,
+          timestamp: new Date().toISOString(),
+          email: email,
+          error: error
+        });
+        
+        // Keep error visible longer by preventing auto-clear
+        setTimeout(() => {
+          console.error('Login error persisted:', errorMsg);
+        }, 5000);
       } finally {
         setIsLoading(false)
       }

@@ -4,7 +4,7 @@ import { triggerGlobalLogout } from '../utils/auth.js';
 // Create axios instance with base configuration
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
-  timeout: 10000, // 10 seconds timeout
+  timeout: 30000, // 30 seconds timeout for better network handling
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,6 +44,19 @@ axiosClient.interceptors.response.use(
     return responseData;
   },
   (error) => {
+    // Enhanced error logging for debugging
+    console.error('API Error Details:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL
+      }
+    });
+
     // Handle global errors
     if (error.response?.status === 401) {
       // Token expired or invalid - trigger global logout
@@ -64,8 +77,18 @@ axiosClient.interceptors.response.use(
         errorMessage = error.response.data.error;
       }
     } else if (error.message) {
-      errorMessage = error.message;
+      // Handle network errors with more specific messages
+      if (error.message.includes('timeout')) {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (error.message.includes('Network Error')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else {
+        errorMessage = error.message;
+      }
     }
+    
+    // Persistent error logging
+    console.error('Final Error Message:', errorMessage);
     
     // Return a rejected promise with standardized error
     return Promise.reject(new Error(errorMessage));

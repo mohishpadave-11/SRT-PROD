@@ -5,7 +5,8 @@ export const loginAPI = async (email, password) => {
   try {
     const response = await axiosClient.post('/auth/login', { email, password });
     
-    if (response.token) {
+    // Handle the actual response structure from backend
+    if (response && response.token) {
       localStorage.setItem('user', JSON.stringify(response.user));
       localStorage.setItem('token', response.token);
     }
@@ -13,7 +14,7 @@ export const loginAPI = async (email, password) => {
     return response;
   } catch (error) {
     // Throw a simple error message
-    throw error.response?.data?.message || 'Login failed';
+    throw new Error(error.message || 'Login failed');
   }
 };
 

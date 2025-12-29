@@ -40,7 +40,8 @@ app.use(express.json({ limit: '10mb' }));
 const allowedOrigins = [
   process.env.FRONTEND_URL,                // Render Environment Variable
   "https://srt-dev.vercel.app",            // 👈 Explicitly allow your DEV Frontend
-  "https://srt-prod.vercel.app",           // Explicitly allow Production
+  "https://srt-prod.vercel.app",
+    "https://srt-dev-puce.vercel.app",           // Explicitly allow Production
   "http://localhost:5173",                 // Allow Localhost (Vite)
   "http://localhost:3000",                 // Allow Localhost (React/Node)
   "http://127.0.0.1:5173"                  // Allow Local IP
