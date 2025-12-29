@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import LoginPage from './pages/login/LoginPage'
+import SignupPage from './pages/login/SignupPage'
 import ForgotPasswordPage from './pages/login/ForgotPasswordPage'
 import ResetPasswordPage from './pages/login/ResetPasswordPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
@@ -47,6 +48,7 @@ function App() {
         <Routes>
           {/* AUTH ROUTES */}
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
