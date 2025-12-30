@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { MoreVertical, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
+import Spinner from '../../components/ui/Spinner'
 
 // --- Components ---
 import StatsCard from '../../dashboardcomponents/components/StatsCard'
@@ -9,7 +10,6 @@ import JobMapping from '../../dashboardcomponents/components/JobMapping'
 import JobsCreated from '../../dashboardcomponents/components/JobsCreated'
 import Top5Parties from '../../dashboardcomponents/components/Top5Parties'
 import DashboardLayout from '../../components/layout/DashboardLayout'
-import Loading from '../../components/ui/Loading';
 
 // --- Services & Utils ---
 import { getJobsAPI } from '../../services/jobService'
@@ -170,7 +170,9 @@ const DashboardPage = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <Loading variant="page" size="lg" />
+        <div className="flex justify-center items-center h-screen">
+          <Spinner size="lg" />
+        </div>
       </DashboardLayout>
     )
   }
