@@ -11,7 +11,7 @@ import FormSelect from '../../components/form/FormSelect';
 import JobFormSection from '../../components/form/JobFormSection';
 import useJobForm from '../../hooks/useJobForm';
 import useDocumentActions from '../../hooks/useDocumentActions';
-import Spinner from '../../components/ui/Spinner';
+import Spinner from '../../components/Spinner';
 
 // --- API Services ---
 import { updateJobAPI } from '../../services/jobService';
