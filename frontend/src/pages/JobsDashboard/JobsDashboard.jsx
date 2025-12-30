@@ -8,7 +8,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import JobsTable from '../../components/documentdashboardcomponents/JobsTable'
 // Import the API function
 import { getJobsAPI, deleteJobAPI } from '../../services/jobService'
-import Spinner from '../../components/ui/Spinner';
+import Spinner from '../../components/Spinner';
 
 const JobsDashboard = () => {
   const navigate = useNavigate()
