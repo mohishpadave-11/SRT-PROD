@@ -65,7 +65,18 @@ export const deleteDocumentAPI = async (docId) => {
   }
 };
 
-// 5. Get Share Options (NEW Feature)
+// 5. Update Document (Edit document metadata or replace file)
+export const updateDocumentAPI = async (docId, updateData) => {
+  try {
+    const response = await axiosClient.put(`/api/documents/${docId}`, updateData);
+    return response;
+  } catch (error) {
+    console.error("Update Error:", error);
+    throw error.message || 'Update failed';
+  }
+};
+
+// 6. Get Share Options (NEW Feature)
 // Returns ready-to-use links for WhatsApp and Gmail that are cross-platform compatible
 export const getShareOptionsAPI = async (docId, fileName) => {
   try {
