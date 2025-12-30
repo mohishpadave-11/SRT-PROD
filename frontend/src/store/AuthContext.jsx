@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { isTokenExpired, validateTokenAndGetUser } from '../utils/tokenUtils.js';
 import { setGlobalLogout, clearGlobalLogout } from '../utils/auth.js';
+import Spinner from '../components/ui/Spinner';
 
 const AuthContext = createContext(null);
 
@@ -40,9 +41,11 @@ export const AuthProvider = ({ children }) => {
     // Validate token before setting
     if (isTokenExpired(authToken)) {
       console.error('Attempted to login with expired token');
+      console.error('Token expiration check failed for token:', authToken?.substring(0, 20) + '...');
       return false;
     }
     
+    console.log('Login successful, token validated');
     setUser(userData);
     setToken(authToken);
     localStorage.setItem('user', JSON.stringify(userData));
@@ -90,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={{ user, token, login, logout, loading }}>
       {loading ? (
         <div className="flex justify-center items-center h-screen">
-          <div className="w-8 h-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+          <Spinner size="lg" />
         </div>
       ) : (
         children
