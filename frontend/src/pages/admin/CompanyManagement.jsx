@@ -3,7 +3,7 @@ import { Plus, Trash2, Edit2, X, Check } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 // Import Real API
 import { getCompaniesAPI, createCompanyAPI, updateCompanyAPI, deleteCompanyAPI } from '../../services/companyService'
-import Loading from '../../components/ui/Loading';
+import Spinner from '../../components/ui/Spinner';
 
 const CompanyManagement = () => {
   const [companies, setCompanies] = useState([])
@@ -180,7 +180,9 @@ const CompanyManagement = () => {
 
             {/* Loading State */}
             {loading && (
-              <Loading variant="inline" size="md" />
+              <div className="flex justify-center py-12">
+                <Spinner size="md" />
+              </div>
             )}
 
             {/* Companies List */}
