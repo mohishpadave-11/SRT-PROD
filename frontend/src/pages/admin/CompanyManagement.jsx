@@ -3,7 +3,7 @@ import { Plus, Trash2, Edit2, X, Check } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 // Import Real API
 import { getCompaniesAPI, createCompanyAPI, updateCompanyAPI, deleteCompanyAPI } from '../../services/companyService'
-import Spinner from '../../components/ui/Spinner';
+import Spinner from '../components/Spinner';
 
 const CompanyManagement = () => {
   const [companies, setCompanies] = useState([])
