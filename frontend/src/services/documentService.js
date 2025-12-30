@@ -8,7 +8,7 @@ export const uploadDocumentAPI = async (jobId, docType, file) => {
   formData.append('file', file);
 
   try {
-    const response = await axiosClient.post('/documents/upload', formData, {
+    const response = await axiosClient.post('/api/documents/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -23,7 +23,7 @@ export const uploadDocumentAPI = async (jobId, docType, file) => {
 // 2. Get Documents for a specific Job
 export const getJobDocumentsAPI = async (jobId) => {
   try {
-    const response = await axiosClient.get(`/documents/${jobId}`);
+    const response = await axiosClient.get(`/api/documents/${jobId}`);
     return response;
   } catch (error) {
     console.error("Fetch Docs Error:", error);
@@ -40,7 +40,7 @@ export const downloadDocumentAPI = async (docId, disposition = 'attachment') => 
     }
 
     const response = await axiosClient.get(
-      `/documents/download/${docId}?disposition=${disposition}`
+      `/api/documents/download/${docId}?disposition=${disposition}`
     );
 
     if (!response || !response.downloadUrl) {
@@ -57,7 +57,7 @@ export const downloadDocumentAPI = async (docId, disposition = 'attachment') => 
 // 4. Delete Document
 export const deleteDocumentAPI = async (docId) => {
   try {
-    const response = await axiosClient.delete(`/documents/${docId}`);
+    const response = await axiosClient.delete(`/api/documents/${docId}`);
     return response;
   } catch (error) {
     console.error("Delete Error:", error);
