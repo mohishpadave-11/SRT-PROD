@@ -202,7 +202,7 @@ const NewJobPage = () => {
             }
           }
 
-          navigate("/jobs-dashboard", { state: { message: "Job created successfully!", refresh: true } });
+          navigate("/dashboard", { state: { message: "Job created successfully!", refresh: true } });
         }
 
     } catch (err) {
