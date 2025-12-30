@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import logo from '../../assets/srtship-logo.png'
 import { validatePassword, PASSWORD_ERROR_MESSAGE } from '../../utils/passwordValidation'
-import Spinner from '../components/Spinner'
+import Spinner from '../../components/Spinner'
 
 const ResetPasswordPage = () => {
   const [password, setPassword] = useState('')
