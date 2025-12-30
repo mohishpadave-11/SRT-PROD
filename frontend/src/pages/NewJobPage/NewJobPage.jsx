@@ -14,7 +14,7 @@ import {
 // --- 3. Import Company Service ---
 import { createCompanyAPI } from '../../services/companyService';
 
-import Spinner from '../components/Spinner';
+import Spinner from '../../components/Spinner';
 
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import CompanyDropdown from '../../components/form/CompanyDropdown';
