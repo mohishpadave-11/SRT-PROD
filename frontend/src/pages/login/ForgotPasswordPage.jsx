@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Ship, ArrowLeft, Mail, CheckCircle } from 'lucide-react'
 import logo from '../../assets/srtship-logo.png'
 import { forgotPasswordAPI } from '../../services/authService' // IMPORT THIS
+import Spinner from '../../components/Spinner'
+
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('')
