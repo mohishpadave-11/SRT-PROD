@@ -2,34 +2,41 @@ const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
   try {
-    // 1. Create Transporter (Using Gmail Service)
+    // 1. Create Transporter
     const transporter = nodemailer.createTransport({
-      service: 'Gmail', // 👈 Automatically sets host to smtp.gmail.com & port to 587
+      host: 'smtp.gmail.com', // Explicitly set host
+      port: 465,              // 👇 USE PORT 465 (SSL) - Much more reliable on Cloud
+      secure: true,           // Must be true for port 465
       auth: {
-        // 👇 These must match the names in your .env file
-        user: process.env.EMAIL_USERNAME, 
-        pass: process.env.EMAIL_PASSWORD, 
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+      // 👇 KEY FIX 1: Force IPv4 (Prevents hanging on Render/Docker)
+      family: 4, 
+      // 👇 KEY FIX 2: Prevent certificate errors
+      tls: {
+        rejectUnauthorized: false, 
       },
     });
 
     // 2. Define Email Options
     const mailOptions = {
-      from: '"SRT Support" <noreply@srtshipping.com>',
+      // Best Practice: The 'From' address should match your authenticated email
+      from: `"SRT Support" <${process.env.EMAIL_USERNAME}>`, 
       to: options.email,
       subject: options.subject,
-      text: options.message,
-      // html: options.html, // (Optional: Enable if you want to send HTML emails)
+      text: options.message, // Plain text body
+      // html: options.message.replace(/\n/g, '<br>'), // Simple fallback if you want HTML
     };
 
     // 3. Send Email
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Email sent successfully:', info.messageId);
-    return { success: true, messageId: info.messageId };
+    return info;
 
   } catch (error) {
     console.error('❌ Email sending failed:', error);
-    // Throw error so the controller knows to send a 500 response
-    throw new Error(`Email could not be sent: ${error.message}`);
+    throw new Error(error.message);
   }
 };
 
