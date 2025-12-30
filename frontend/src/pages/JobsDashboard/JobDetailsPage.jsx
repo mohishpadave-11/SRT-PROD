@@ -11,7 +11,7 @@ import FormSelect from '../../components/form/FormSelect';
 import JobFormSection from '../../components/form/JobFormSection';
 import useJobForm from '../../hooks/useJobForm';
 import useDocumentActions from '../../hooks/useDocumentActions';
-import Loading from '../../components/ui/Loading';
+import Spinner from '../../components/ui/Spinner';
 
 // --- API Services ---
 import { updateJobAPI } from '../../services/jobService';
@@ -271,7 +271,9 @@ const JobDetailsPage = () => {
 
   if (loading) return (
     <DashboardLayout>
-      <Loading variant="page" size="lg" />
+      <div className="flex justify-center items-center h-screen">
+        <Spinner size="lg" />
+      </div>
     </DashboardLayout>
   );
 
@@ -784,7 +786,9 @@ const JobDetailsPage = () => {
                 <div className={activeTab === 'documents' ? 'block' : 'hidden'}>
                   <div className="-m-4 sm:-m-6 md:-m-8 p-4 sm:p-6 md:p-8">
                     {loadingDocs ? (
-                        <Loading variant="inline" size="md" text="Loading documents..." />
+                        <div className="flex justify-center py-12">
+                          <Spinner size="md" />
+                        </div>
                     ) : (
                         <DocumentExplorer
                           documents={documents}
