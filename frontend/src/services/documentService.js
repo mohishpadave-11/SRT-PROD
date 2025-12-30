@@ -16,7 +16,7 @@ export const uploadDocumentAPI = async (jobId, docType, file) => {
     return response;
   } catch (error) {
     console.error("Upload Error:", error);
-    throw error.response?.data?.message || 'Upload failed';
+    throw error.message || 'Upload failed';
   }
 };
 
