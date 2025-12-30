@@ -1,6 +1,6 @@
 import { FileText, Trash2, Download, X, Share2, MessageCircle, Mail } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-import Spinner from '../ui/Spinner'
+import Spinner from '../../components/Spinner'
 
 // Mac Finder Folder Icon Component - Exact Match
 const MacFinderFolder = ({ className = "w-16 h-16" }) => (
