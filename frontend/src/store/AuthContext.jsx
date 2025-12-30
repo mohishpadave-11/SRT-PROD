@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { isTokenExpired, validateTokenAndGetUser } from '../utils/tokenUtils.js';
 import { setGlobalLogout, clearGlobalLogout } from '../utils/auth.js';
-import Spinner from '../components/ui/Spinner';
+import Spinner from '../components/Spinner';
 
 const AuthContext = createContext(null);
 
