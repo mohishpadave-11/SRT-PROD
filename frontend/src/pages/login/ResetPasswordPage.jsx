@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import logo from '../../assets/srtship-logo.png'
+import { validatePassword, PASSWORD_ERROR_MESSAGE } from '../../utils/passwordValidation'
+import Spinner from '../../components/ui/Spinner'
 
 const ResetPasswordPage = () => {
   const [password, setPassword] = useState('')
@@ -17,11 +19,6 @@ const ResetPasswordPage = () => {
   const navigate = useNavigate()
   const { token } = useParams()
 
-  const validatePassword = (value) => {
-    const re = /^(?=.*[A-Z])(?=.*\d).{8,}$/
-    return re.test(value)
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMessage('')
@@ -30,7 +27,7 @@ const ResetPasswordPage = () => {
 
     // Validate password
     if (!validatePassword(password)) {
-      setPasswordError('Password must be at least 8 characters long, contain at least 1 uppercase letter, and 1 number.')
+      setPasswordError(PASSWORD_ERROR_MESSAGE)
       return
     }
 
@@ -43,7 +40,7 @@ const ResetPasswordPage = () => {
     setIsLoading(true)
     try {
       // Call reset password API
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/reset-password/${token}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/reset-password/${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -191,8 +188,9 @@ const ResetPasswordPage = () => {
             <button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
+              {isLoading && <Spinner size="sm" />}
               {isLoading ? 'Updating Password...' : 'Update Password'}
             </button>
           </form>
