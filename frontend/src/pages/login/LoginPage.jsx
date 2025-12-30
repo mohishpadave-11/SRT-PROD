@@ -6,6 +6,7 @@ import logo from '../../assets/srtship-logo.png'
 import { loginAPI } from '../../services/authService' // IMPORT THIS
 import { useAuth } from '../../store/AuthContext';
 import { validateEmail } from '../../utils/emailValidation'
+import Spinner from '../../components/ui/Spinner'
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate()
@@ -172,8 +173,9 @@ const LoginPage = ({ onLogin }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
+              {isLoading && <Spinner size="sm" />}
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
