@@ -6,6 +6,7 @@ import { registerAPI } from '../../services/authService'
 import { useAuth } from '../../store/AuthContext'
 import { validatePassword, getPasswordValidationError } from '../../utils/passwordValidation'
 import { validateEmail } from '../../utils/emailValidation'
+import Spinner from '../../components/ui/Spinner'
 
 const SignupPage = () => {
   const navigate = useNavigate()
@@ -107,13 +108,13 @@ const SignupPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center overflow-hidden p-4 bg-gradient-to-br from-green-50 via-white to-green-50">
+    <div className="min-h-screen flex items-center justify-center overflow-hidden p-4 bg-gradient-to-br from-blue-50 via-white to-blue-50">
       <div className="w-full relative max-w-5xl overflow-hidden flex flex-col md:flex-row shadow-2xl rounded-3xl bg-white">
         {/* Decorative Elements */}
         <div className="w-full h-full absolute bg-gradient-to-t from-transparent to-black/5 rounded-3xl pointer-events-none"></div>
         
         {/* Left Side - Branding */}
-        <div className="bg-gradient-to-br from-green-600 to-green-800 text-white p-8 md:p-12 md:w-1/2 relative rounded-l-3xl overflow-hidden">
+        <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white p-8 md:p-12 md:w-1/2 relative rounded-l-3xl overflow-hidden">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/3 translate-y-1/3"></div>
@@ -126,10 +127,10 @@ const SignupPage = () => {
             <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-4">
               Join SRT Shipping CRM
             </h1>
-            <p className="text-green-100 text-lg mb-6">
+            <p className="text-blue-100 text-lg mb-6">
               Create your account to start managing shipping operations and streamline your logistics workflow.
             </p>
-            <div className="space-y-3 text-green-100">
+            <div className="space-y-3 text-blue-100">
               <div className="flex items-center">
                 <UserCheck className="w-5 h-5 mr-3" />
                 <span>Manage jobs and track shipments</span>
@@ -172,7 +173,7 @@ const SignupPage = () => {
                   id="name"
                   name="name"
                   placeholder="Enter your full name"
-                  className={`text-sm w-full py-3 pl-12 pr-4 border rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-green-500 transition-all ${
+                  className={`text-sm w-full py-3 pl-12 pr-4 border rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-blue-500 transition-all ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={formData.name}
@@ -194,7 +195,7 @@ const SignupPage = () => {
                   id="email"
                   name="email"
                   placeholder="your.email@example.com"
-                  className={`text-sm w-full py-3 pl-12 pr-4 border rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-green-500 transition-all ${
+                  className={`text-sm w-full py-3 pl-12 pr-4 border rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-blue-500 transition-all ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={formData.email}
@@ -212,7 +213,7 @@ const SignupPage = () => {
               <select
                 id="role"
                 name="role"
-                className="text-sm w-full py-3 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-green-500 transition-all"
+                className="text-sm w-full py-3 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-blue-500 transition-all"
                 value={formData.role}
                 onChange={handleInputChange}
               >
@@ -233,7 +234,7 @@ const SignupPage = () => {
                   id="password"
                   name="password"
                   placeholder="Create a strong password"
-                  className={`text-sm w-full py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-green-500 transition-all ${
+                  className={`text-sm w-full py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-blue-500 transition-all ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={formData.password}
@@ -262,7 +263,7 @@ const SignupPage = () => {
                   id="confirmPassword"
                   name="confirmPassword"
                   placeholder="Confirm your password"
-                  className={`text-sm w-full py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-green-500 transition-all ${
+                  className={`text-sm w-full py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 bg-white text-black focus:ring-blue-500 transition-all ${
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={formData.confirmPassword}
@@ -282,8 +283,9 @@ const SignupPage = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
+              {isLoading && <Spinner size="sm" />}
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
@@ -291,7 +293,7 @@ const SignupPage = () => {
           <div className="mt-6 text-center">
             <p className="text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-green-600 hover:text-green-700 font-medium">
+              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
                 Sign in here
               </Link>
             </p>
