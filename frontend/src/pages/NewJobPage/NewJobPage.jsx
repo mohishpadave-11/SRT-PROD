@@ -14,7 +14,7 @@ import {
 // --- 3. Import Company Service ---
 import { createCompanyAPI } from '../../services/companyService';
 
-import Loading from '../../components/ui/Loading';
+import Spinner from '../../components/ui/Spinner';
 
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import CompanyDropdown from '../../components/form/CompanyDropdown';
@@ -223,7 +223,7 @@ const NewJobPage = () => {
 
       {loading ? (
         <div className="flex justify-center items-center min-h-[400px]">
-          <Loading variant="page" size="lg" text="Loading job data..." />
+          <Spinner size="lg" />
         </div>
       ) : (
       <div className="max-w-screen-2xl mx-auto text-slate-700">
@@ -645,7 +645,7 @@ const NewJobPage = () => {
             }`}
           >
             {loading ? (
-              <Loading variant="button" size="sm" text={isEditMode ? 'Updating...' : 'Creating Job & Uploading...'} />
+              <Spinner size="sm" />
             ) : (
               <>
                 <Save className="w-4 h-4" />
