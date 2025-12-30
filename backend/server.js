@@ -87,7 +87,7 @@ const PORT = process.env.PORT || 3001;
 
 // Connect to DB and start server
 // 👇 CHANGED: Switched to sync({ alter: true }) to add the missing columns
-sequelize.sync() 
+sequelize.sync({ alter: true }) 
   .then(() => {
     console.log('✅ Database connected & Tables Updated');
     app.listen(PORT, () => {
