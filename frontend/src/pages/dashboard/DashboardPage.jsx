@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { MoreVertical } from 'lucide-react'
+import { MoreVertical, RefreshCw } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 
 // --- Components ---
 import StatsCard from '../../dashboardcomponents/components/StatsCard'
@@ -21,10 +22,13 @@ import {
 } from '../../utils/dashboardStats'
 
 const DashboardPage = () => {
+  const location = useLocation()
+  
   // --- State ---
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   // Filter States
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'short' }))
@@ -54,7 +58,65 @@ const DashboardPage = () => {
     fetchData()
   }, [])
 
-  // --- 2. Handle Filter Logic ---
+  // --- 1.1. Listen for focus events to refresh data when user returns to dashboard ---
+  useEffect(() => {
+    const handleFocus = () => {
+      // Refetch data when user returns to the dashboard tab/window
+      const fetchData = async () => {
+        try {
+          const response = await getJobsAPI()
+          const jobArray = Array.isArray(response) ? response : (response.data || [])
+          setJobs(jobArray)
+        } catch (err) {
+          console.error('Failed to refresh dashboard data:', err)
+        }
+      }
+      fetchData()
+    }
+
+    // Add event listener for when user returns to the tab
+    window.addEventListener('focus', handleFocus)
+    
+    // Also listen for visibility change (when switching tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        handleFocus()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
+
+  // --- 2. Manual Refresh Function ---
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true)
+      const response = await getJobsAPI()
+      const jobArray = Array.isArray(response) ? response : (response.data || [])
+      setJobs(jobArray)
+    } catch (err) {
+      console.error('Failed to refresh dashboard data:', err)
+      setError('Failed to refresh data')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  // --- 1.2. Handle navigation state (when redirected from job creation) ---
+  useEffect(() => {
+    if (location.state?.refresh) {
+      handleRefresh()
+      // Clear the state to prevent unnecessary refreshes
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
+
+  // --- 3. Handle Filter Logic ---
 
   const handleDecadeChange = (decade) => {
     setSelectedDecade(decade)
@@ -118,9 +180,21 @@ const DashboardPage = () => {
 
       {/* Greeting */}
       <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Good Evening, SRT Shipping! Still going Strong?</h1>
-        <p className="text-sm text-gray-500 mt-1">Let's See what's on your plate today.</p>
-        <p className="text-xs text-gray-400">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Good Evening, SRT Shipping! Still going Strong?</h1>
+            <p className="text-sm text-gray-500 mt-1">Let's See what's on your plate today.</p>
+            <p className="text-xs text-gray-400">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
