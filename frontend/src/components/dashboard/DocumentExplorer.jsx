@@ -305,4 +305,4 @@ const DocumentExplorer = ({
   )
 }
 
-export default DocumentExplorer
+eort default DocumentExplorer
