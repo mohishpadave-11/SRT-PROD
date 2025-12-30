@@ -6,7 +6,7 @@ import { registerAPI } from '../../services/authService'
 import { useAuth } from '../../store/AuthContext'
 import { validatePassword, getPasswordValidationError } from '../../utils/passwordValidation'
 import { validateEmail } from '../../utils/emailValidation'
-import Spinner from '../../components/ui/Spinner'
+import Spinner from '../components/Spinner'
 
 const SignupPage = () => {
   const navigate = useNavigate()
