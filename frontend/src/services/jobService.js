@@ -27,7 +27,7 @@ export const getJobsAPI = async () => {
 // 2.1. Get Single Job by ID
 export const getJobByIdAPI = async (jobId) => {
   try {
-    const response = await axiosClient.get(`/api/jobs${jobId}`);
+    const response = await axiosClient.get(`/api/jobs/${jobId}`);
     return response;
   } catch (error) {
     const parsedError = handleError(error, { showToast: false });
