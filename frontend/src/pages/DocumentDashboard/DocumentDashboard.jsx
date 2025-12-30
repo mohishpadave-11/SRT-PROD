@@ -5,7 +5,7 @@ import { uploadDocumentAPI, getJobDocumentsAPI } from '../../services/documentSe
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import DocumentExplorer from '../../components/dashboard/DocumentExplorer'
 import useDocumentActions from '../../hooks/useDocumentActions'
-import Spinner from '../../components/ui/Spinner'
+import Spinner from '../../components/Spinner'
 
 const DocumentDashboard = () => {
   const [items, setItems] = useState([])
