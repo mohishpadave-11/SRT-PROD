@@ -125,7 +125,16 @@ const useJobForm = (jobId = null, isEditMode = false) => {
     try {
       setLoadingDocs(true);
       const docs = await getJobDocumentsAPI(jobId);
-      setDocuments(docs || []);
+      // Map documents to include the required properties for DocumentGrid
+      const mappedDocs = (docs || []).map(doc => ({
+        id: doc.id,
+        name: doc.original_name,
+        type: 'document', // ✅ Add the required type property
+        size: (doc.size / 1024).toFixed(1) + ' KB',
+        dateModified: new Date(doc.updatedAt).toLocaleDateString(),
+        r2Key: doc.r2_key
+      }));
+      setDocuments(mappedDocs);
     } catch (err) {
       console.error("Failed to load documents:", err);
       setDocuments([]);
