@@ -6,7 +6,7 @@ import logo from '../../assets/srtship-logo.png'
 import { loginAPI } from '../../services/authService' // IMPORT THIS
 import { useAuth } from '../../store/AuthContext';
 import { validateEmail } from '../../utils/emailValidation'
-import Spinner from '../components/Spinner'
+import Spinner from '../../components/Spinner'
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate()
