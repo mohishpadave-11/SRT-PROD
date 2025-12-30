@@ -8,7 +8,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import JobsTable from '../../components/documentdashboardcomponents/JobsTable'
 // Import the API function
 import { getJobsAPI, deleteJobAPI } from '../../services/jobService'
-import Loading from '../../components/ui/Loading';
+import Spinner from '../../components/ui/Spinner';
 
 const JobsDashboard = () => {
   const navigate = useNavigate()
@@ -251,7 +251,9 @@ const JobsDashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <Loading variant="page" size="lg" />
+        <div className="flex justify-center items-center h-screen">
+          <Spinner size="lg" />
+        </div>
       </DashboardLayout>
     )
   }
